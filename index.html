@@ -61,8 +61,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .mf{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
 
 /* ===================== LOGIN ===================== */
-#login-screen{
-  min-height:100vh;
+#login{
+  height:100vh;
   display:flex;
   background:var(--bg);
   overflow:hidden;
@@ -73,6 +73,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
   flex-shrink:0;
   position:relative;
   overflow:hidden;
+  min-height:100vh;
 }
 .ll img{
   position:absolute;
@@ -87,8 +88,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
   inset:0;
   background:linear-gradient(to bottom,
     rgba(8,12,16,0.05) 0%,
-    rgba(8,12,16,0.05) 35%,
-    rgba(8,12,16,0.70) 62%,
+    rgba(8,12,16,0.05) 30%,
+    rgba(8,12,16,0.70) 58%,
     rgba(8,12,16,0.96) 100%
   );
 }
@@ -96,30 +97,32 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .ll-text{
   position:absolute;
   bottom:0;left:0;right:0;
-  padding:18px 22px;
+  padding:16px 20px;
   z-index:1;
 }
 /* RIGHT: login form — simple centered flex */
 .lr{
   flex:1;
+  height:100vh;
   display:flex;
   align-items:center;
   justify-content:center;
-  padding:24px;
+  padding:20px;
   background:var(--bg);
+  overflow-y:auto;
 }
 .lr-box{
   width:100%;
-  max-width:320px;
+  max-width:300px;
 }
 @media(max-width:680px){
   .ll{display:none;}
-  .lr{padding:24px 16px;}
+  .lr{padding:20px 14px;}
 }
-.ltabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--r);padding:3px;margin-bottom:14px;}
-.ltab{flex:1;padding:7px;border-radius:7px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:500;color:var(--tx3);transition:all .12s;}
+.ltabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--r);padding:3px;margin-bottom:12px;}
+.ltab{flex:1;padding:6px;border-radius:7px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:500;color:var(--tx3);transition:all .12s;}
 .ltab.on{background:var(--bg5);color:var(--tx);}
-.lerr{background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.2);border-radius:var(--r);padding:8px 12px;font-size:11px;color:var(--rd);margin-bottom:12px;}
+.lerr{background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.2);border-radius:var(--r);padding:7px 11px;font-size:11px;color:var(--rd);margin-bottom:10px;}
 /* ================================================= */
 
 /* SHELL */
@@ -240,40 +243,40 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="ll-grad"></div>
     <div class="ll-text">
       <!-- frase -->
-      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:3px;letter-spacing:-.02em;">El esfuerzo sin método</div>
-      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#3DFFA0;line-height:1.2;margin-bottom:14px;letter-spacing:-.02em;">es solo cansancio.</div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:2px;letter-spacing:-.02em;">El esfuerzo sin método</div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#3DFFA0;line-height:1.2;margin-bottom:12px;letter-spacing:-.02em;">es solo cansancio.</div>
       <!-- separador -->
-      <div style="width:30px;height:2px;background:#3DFFA0;margin-bottom:14px;opacity:.8;"></div>
+      <div style="width:28px;height:2px;background:#3DFFA0;margin-bottom:12px;opacity:.8;"></div>
       <!-- pilares -->
-      <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
         <div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Planificación Científica</div>
-          <div style="font-size:11px;color:rgba(232,239,248,.7);line-height:1.45;">Tu plan diseñado con datos, progresión real semana a semana.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Planificación Científica</div>
+          <div style="font-size:10px;color:rgba(232,239,248,.7);line-height:1.4;">Tu plan diseñado con datos, progresión real semana a semana.</div>
         </div>
         <div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Seguimiento en Tiempo Real</div>
-          <div style="font-size:11px;color:rgba(232,239,248,.7);line-height:1.45;">Tu entrenador ve tu progreso al instante. Siempre conectados.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Seguimiento en Tiempo Real</div>
+          <div style="font-size:10px;color:rgba(232,239,248,.7);line-height:1.4;">Tu entrenador ve tu progreso al instante. Siempre conectados.</div>
         </div>
         <div>
-          <div style="font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Adaptado a Ti</div>
-          <div style="font-size:11px;color:rgba(232,239,248,.7);line-height:1.45;">Intensidad controlada según tu cuerpo, tu día y tu objetivo.</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#3DFFA0;margin-bottom:2px;">Adaptado a Ti</div>
+          <div style="font-size:10px;color:rgba(232,239,248,.7);line-height:1.4;">Intensidad controlada según tu cuerpo, tu día y tu objetivo.</div>
         </div>
       </div>
       <!-- firma -->
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);">
-        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.8);">Cristobal Díaz</div>
-        <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-top:1px;">HouseFit Training</div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.8);">Cristobal Díaz</div>
+        <div style="font-family:'DM Mono',monospace;font-size:7px;color:rgba(255,255,255,.35);letter-spacing:.1em;text-transform:uppercase;margin-top:1px;">HouseFit Training</div>
       </div>
     </div>
   </div>
   <!-- RIGHT: form centered -->
   <div class="lr">
     <div class="lr-box">
-      <div style="text-align:center;margin-bottom:20px;">
-        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--ac);letter-spacing:-.02em;">HouseFit</div>
-        <div style="font-size:11px;color:var(--tx2);margin-top:3px;">Cristobal Díaz · Sistema de entrenamiento</div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--ac);letter-spacing:-.02em;">HouseFit</div>
+        <div style="font-size:10px;color:var(--tx2);margin-top:3px;">Cristobal Díaz · Sistema de entrenamiento</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r3);padding:22px;">
+      <div style="background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r2);padding:18px;">
         <div class="ltabs">
           <button class="ltab on" onclick="switchTab('alumno',this)">Alumno</button>
           <button class="ltab" onclick="switchTab('profe',this)">Profe</button>
