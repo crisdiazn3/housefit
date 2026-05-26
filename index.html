@@ -1514,8 +1514,11 @@ window.saveEj = async function() {
     descanso: parseInt(v('ej-d')) || null,
     perc: {}
   };
-  await FP('alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios', ej);
+  console.log('Guardando ejercicio en:', 'alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios');
+  var result = await FP('alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios', ej);
+  console.log('Resultado Firebase:', result ? result.key : 'sin key');
   S.alumnos[ctx.aid] = await FG('alumnos/' + ctx.aid);
+  console.log('Dias plan cargado:', S.alumnos[ctx.aid] && S.alumnos[ctx.aid].dias_plan ? Object.keys(S.alumnos[ctx.aid].dias_plan) : 'vacio');
   closeM('m-ej'); toast('Ejercicio agregado');
   rPauta(A());
 };
