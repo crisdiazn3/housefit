@@ -2068,6 +2068,16 @@ var AVL = ['Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Fic
 
 function renderAV() {
   var a = S.alumnos[S.uid];
+  // If dias_plan is missing, reload from Firebase
+  if (!a || !a.dias_plan) {
+    FG('alumnos/' + S.uid).then(function(data) {
+      if (data) {
+        S.alumnos[S.uid] = data;
+        renderAV();
+      }
+    });
+    return;
+  }
   el('av-nav').innerHTML = AVL.map(function(l, i) {
     return '<button class="avn' + (S.avv === AVV[i] ? ' on' : '') + '" onclick="avSet(\'' + AVV[i] + '\')">' + l + '</button>';
   }).join('');
@@ -2239,12 +2249,14 @@ function avRenderDia(a) {
         }
       }
     });
-    var obsAl = (dia2_av && dia2_av.obs_alumno && dia2_av.obs_alumno[si]) ? dia2_av.obs_alumno[si] : (dia && dia.obs_alumno && dia.obs_alumno[si] ? dia.obs_alumno[si] : '');
-  var avCardioFinalHTML = av_cardioFinal ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;">' +
+    var obsAl = (dia && dia.obs_alumno && dia.obs_alumno[si]) ? dia.obs_alumno[si] : '';
+  // Cardio final - get from dia
+  var avCFinal = dia.cardio && dia.cardio.final ? dia.cardio.final : null;
+  var avCardioFinalHTML = avCFinal ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ Cardio Final</div>' +
-    '<div style="font-size:14px;font-weight:600;">' + av_cardioFinal.actividad + '</div>' +
-    '<div style="font-size:12px;color:var(--tx2);margin-top:2px;">' + av_cardioFinal.duracion + ' minutos · Intensidad ' + av_cardioFinal.intensidad + '</div>' +
-    (av_cardioFinal.obs?'<div style="font-size:11px;color:var(--tx3);font-style:italic;margin-top:3px;">'+av_cardioFinal.obs+'</div>':'') + '</div>' : '';
+    '<div style="font-size:14px;font-weight:600;">' + avCFinal.actividad + '</div>' +
+    '<div style="font-size:12px;color:var(--tx2);margin-top:2px;">' + avCFinal.duracion + ' minutos · Intensidad ' + avCFinal.intensidad + '</div>' +
+    (avCFinal.obs?'<div style="font-size:11px;color:var(--tx3);font-style:italic;margin-top:3px;">'+avCFinal.obs+'</div>':'') + '</div>' : '';
     html += '<div style="margin-top:10px;"><div style="font-size:10px;color:var(--tx3);font-family:monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Nota de sesion</div>' +
       '<textarea class="fta" style="min-height:44px;font-size:12px;" placeholder="Como te fue hoy?" onchange="avSaveObs(' + si + ',this.value)">' + obsAl + '</textarea></div>';
   }
