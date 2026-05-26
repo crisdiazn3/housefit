@@ -1030,6 +1030,8 @@ window.doLogin = async function(t) {
       }
     });
     if (!found) { showErr('RUT o contraseña incorrectos'); return; }
+    var fullData = await FG('alumnos/' + foundId);
+    found = fullData || found;
     S.modo = 'alumno'; S.uid = foundId; S.alumnos[foundId] = found;
     el('login').classList.add('hidden');
     el('alumno-app').classList.remove('hidden');
