@@ -920,7 +920,7 @@ window.generarPautaIA = async function() {
   try {
     var resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': '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', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
@@ -2022,28 +2022,17 @@ function rFicha(a) {
     '<div>' + histH + '</div></div>' +
     '<div class="card" style="max-width:560px;">' +
     '<div class="ch"><span class="ct">Zona de peligro</span></div>' +
-    '<div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;" id="zona-danger"></div>' +
+    '<div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+    '<button class="btn bg" id="btn-volver-dia">← Dia anterior</button>' +
+    '<button class="btn bg" id="btn-avanzar-dia">Dia siguiente →</button>' +
+    '<button class="btn bdn" onclick="delAl()">Eliminar alumno</button>' +
     '</div></div>';
-  // Add danger zone buttons after render
-  setTimeout(function() {
-    var zd = document.getElementById('zona-danger');
-    if (!zd || !S.aid) return;
-    var b1 = document.createElement('button');
-    b1.className = 'btn bg';
-    b1.textContent = '← Dia anterior';
-    b1.onclick = function() { profeVolverDia(S.aid); };
-    var b2 = document.createElement('button');
-    b2.className = 'btn bg';
-    b2.textContent = 'Dia siguiente →';
-    b2.onclick = function() { profeAvanzarDia(S.aid); };
-    var b3 = document.createElement('button');
-    b3.className = 'btn bdn';
-    b3.textContent = 'Eliminar alumno';
-    b3.onclick = function() { delAl(); };
-    zd.appendChild(b1);
-    zd.appendChild(b2);
-    zd.appendChild(b3);
-  }, 50);
+  // Bind buttons after render
+  var _aid = S.aid;
+  var _bv = document.getElementById('btn-volver-dia');
+  var _ba = document.getElementById('btn-avanzar-dia');
+  if (_bv) _bv.onclick = (function(a){return function(){profeVolverDia(a);}})(_aid);
+  if (_ba) _ba.onclick = (function(a){return function(){profeAvanzarDia(a);}})(_aid);
 }
 
 window.verPlan = function(idx) {
