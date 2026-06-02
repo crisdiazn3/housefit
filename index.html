@@ -927,7 +927,13 @@ window.generarPautaIA = async function() {
         messages: [{ role: 'user', content: prompt }]
       })
     });
-    var data = await resp.json();
+    var rawText = await resp.text();
+    console.log('API response status:', resp.status);
+    console.log('API response:', rawText.slice(0, 200));
+    if (!resp.ok) {
+      throw new Error('API error ' + resp.status + ': ' + rawText.slice(0, 100));
+    }
+    var data = JSON.parse(rawText);
     var txt = data.content && data.content[0] ? data.content[0].text : '';
     // Clean and parse JSON
     txt = txt.replace(/```json|```/g, '').trim();
