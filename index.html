@@ -1030,8 +1030,6 @@ window.doLogin = async function(t) {
       }
     });
     if (!found) { showErr('RUT o contraseña incorrectos'); return; }
-    var fullData = await FG('alumnos/' + foundId);
-    found = fullData || found;
     S.modo = 'alumno'; S.uid = foundId; S.alumnos[foundId] = found;
     el('login').classList.add('hidden');
     el('alumno-app').classList.remove('hidden');
@@ -1082,11 +1080,10 @@ function renderSide() {
     if (ps === 'vencido') dot = '<span style="width:7px;height:7px;border-radius:50%;background:var(--rd);flex-shrink:0;margin-left:auto;"></span>';
     else if (ps === 'pronto') dot = '<span style="width:7px;height:7px;border-radius:50%;background:var(--am);flex-shrink:0;margin-left:auto;"></span>';
     else if (ps === 'ok') dot = '<span style="width:7px;height:7px;border-radius:50%;background:var(--ac);flex-shrink:0;margin-left:auto;"></span>';
-    var diaLbl = (a.dia_actual !== undefined && a.dia_actual !== null) ? '<span style="font-family:monospace;font-size:9px;color:var(--bl);background:rgba(61,184,255,.1);border:1px solid rgba(61,184,255,.2);border-radius:3px;padding:1px 4px;flex-shrink:0;">D' + (parseInt(a.dia_actual)+1) + '</span>' : '';
     return '<div class="ai' + (S.aid === id ? ' on' : '') + '" onclick="selAl(\'' + id + '\')">' +
       '<div class="av' + (S.aid === id ? '' : '') + '">' + ini + '</div>' +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + a.nombre + '</span>' +
-      diaLbl + dot + '</div>';
+      dot + '</div>';
   }).join('');
 }
 
@@ -1136,17 +1133,6 @@ function renderAll() {
     abtn('+ Cardio', 'bg', function() { openCardioModal(); });
     abtn('+ Movilidad', 'bg', function() { openMovilidadModal(); });
     abtn('IA Pauta', 'bp', function() { el('m-ia-pauta').classList.remove('hidden'); });
-    // Botones control dia alumno
-    var aActual = A();
-    var diaAlumno = (aActual && aActual.dia_actual !== undefined) ? parseInt(aActual.dia_actual) : 0;
-    var totalDiasProfe = (aActual && aActual.dias_plan ? Object.keys(aActual.dias_plan).length : DIAS) || DIAS;
-    var btnCtrl = document.createElement('div');
-    btnCtrl.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:3px 8px;';
-    btnCtrl.innerHTML = '<span style="font-size:10px;color:var(--tx3);margin-right:4px;">Dia alumno:</span>' +
-      '<button class="btn bg sm" style="padding:4px 8px;" onclick="cambiarDiaAlumno(-1)">◀</button>' +
-      '<span style="font-family:monospace;font-size:12px;font-weight:600;color:var(--ac);min-width:36px;text-align:center;">' + (diaAlumno+1) + '/' + totalDiasProfe + '</span>' +
-      '<button class="btn bg sm" style="padding:4px 8px;" onclick="cambiarDiaAlumno(1)">▶</button>';
-    act.appendChild(btnCtrl);
     }
     if (S.view === 'eval') abtn('+ Evaluacion', 'bp', function() { openEvalModal(null); });
     if (S.view === 'msgs') abtn('Enviar mensaje', 'bp', function() { el('m-msg').classList.remove('hidden'); });
@@ -1184,11 +1170,10 @@ function calcSem(ej, si, a, di) {
   for (var s = 0; s < idx; s++) {
     var p = (ej.perc && ej.perc[s] != null) ? ej.perc[s] : null;
     var dr = 0, dp = 0;
-    if (p === 1) { dr = -2; dp = 1; }
-    else if (p === 2) { dr = 2; }
-    else if (p === 3) { dr = 1; }
-    else if (p === 4) { dr = 0; }
-    else if (p === 5) { dr = 0; dp = -1; }
+    if (p === 1) { dr = 2; dp = 1; }
+    else if (p === 2) { dr = 1; }
+    else if (p === 4) { dr = -1; }
+    else if (p === 5) { dr = -2; dp = -1; }
     if (a && di != null) {
       var pre = (a.dias_plan && a.dias_plan[di] && a.dias_plan[di].pre && a.dias_plan[di].pre[s]) ? a.dias_plan[di].pre[s] : null;
       var tot = calcPre(pre);
@@ -1580,17 +1565,6 @@ function openCarga(aid, si) {
   el('m-carga').classList.remove('hidden');
 }
 window.openCarga = openCarga;
-
-window.cambiarDiaAlumno = async function(delta) {
-  var a = A(); if (!a) return;
-  var totalDiasC = (a.dias_plan ? Object.keys(a.dias_plan).length : DIAS) || DIAS;
-  var actual = (a.dia_actual !== undefined && a.dia_actual !== null) ? parseInt(a.dia_actual) : 0;
-  var nuevo = (actual + delta + totalDiasC) % totalDiasC;
-  await FU('alumnos/' + S.aid, { dia_actual: nuevo });
-  S.alumnos[S.aid].dia_actual = nuevo;
-  toast('Dia del alumno actualizado a Dia ' + (nuevo+1));
-  renderAll();
-};
 
 window.setCarga = async function(nivel) {
   var ctx = S.cargaCtx;
@@ -2102,9 +2076,6 @@ window.avSet = function(v3) { S.avv = v3; renderAV(); };
 
 function avPauta(a) {
   var e = el('av-content');
-  // Dia actual del alumno (guardado en Firebase, default 0)
-  var diaActual = (a.dia_actual !== undefined && a.dia_actual !== null) ? parseInt(a.dia_actual) : 0;
-  S.avdia = diaActual; // sincronizar estado local
   var carga2 = a.carga && a.carga[S.avsem] ? a.carga[S.avsem] : null;
   var semAuto = getSemanaActual(a);
   var dia2 = a.dias_plan && a.dias_plan[S.avdia] ? a.dias_plan[S.avdia] : {};
@@ -2125,49 +2096,12 @@ function avPauta(a) {
   var semTabs2 = SL.map(function(l,i) {
     return '<button class="tab' + (i===5?' desc':'') + (i===S.avsem?' on':'') + '" onclick="avSem(' + i + ')">' + l + '</button>';
   }).join('');
-  var totalDias = (a.dias_plan ? Object.keys(a.dias_plan).length : DIAS) || DIAS;
   var dayTabs2 = '';
-  for (var dd = 0; dd < totalDias; dd++) {
+  for (var dd = 0; dd < DIAS; dd++) {
     dayTabs2 += '<button class="tab' + (dd===S.avdia?' on':'') + '" onclick="avDia(' + dd + ')">Dia ' + (dd+1) + '</button>';
   }
   // Semana actual indicator for alumno
   var avSemIndicator = semAuto !== null ? '<div style="background:rgba(61,255,160,.08);border:1px solid rgba(61,255,160,.2);border-radius:var(--r);padding:6px 12px;margin-bottom:8px;font-size:11px;color:var(--ac);font-family:monospace,monospace;text-align:center;">Segun tu fecha de inicio, estas en S' + (semAuto+1) + '</div>' : '';
-  // Resumen semanal
-  var hoy2 = new Date();
-  var inicioSemana = new Date(hoy2); inicioSemana.setDate(hoy2.getDate() - hoy2.getDay());
-  var finSemana = new Date(inicioSemana); finSemana.setDate(inicioSemana.getDate() + 6);
-  var fmtDate = function(d) { return d.toISOString().split('T')[0]; };
-  var sesAll = a.sesiones ? Object.values(a.sesiones) : [];
-  var sesSemana = sesAll.filter(function(s) { return s.fecha >= fmtDate(inicioSemana) && s.fecha <= fmtDate(finSemana); });
-  var diasObjetivo = parseInt(a.dias) || 3;
-  var pctSem = Math.min(100, Math.round(sesSemana.length / diasObjetivo * 100));
-  var colorSem = pctSem >= 100 ? 'var(--ac)' : pctSem >= 50 ? 'var(--am)' : 'var(--rd)';
-  var totalSes = sesAll.length;
-  var resumenSemHTML = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px;">' +
-    '<div style="font-family:monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Resumen semanal</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">' +
-    '<div style="text-align:center;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:8px;">' +
-      '<div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:' + colorSem + ';">' + sesSemana.length + '</div>' +
-      '<div style="font-size:10px;color:var(--tx3);">sesiones esta semana</div>' +
-      '<div style="font-size:9px;color:var(--tx3);">meta: ' + diasObjetivo + '</div>' +
-    '</div>' +
-    '<div style="text-align:center;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:8px;">' +
-      '<div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--bl);">' + totalSes + '</div>' +
-      '<div style="font-size:10px;color:var(--tx3);">sesiones totales</div>' +
-    '</div>' +
-    '<div style="text-align:center;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:8px;">' +
-      '<div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--am);">Dia ' + (diaActual+1) + '</div>' +
-      '<div style="font-size:10px;color:var(--tx3);">pauta actual</div>' +
-    '</div>' +
-    '</div>' +
-    '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<span style="font-size:10px;color:var(--tx3);">Progreso semana</span>' +
-      '<div style="flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;">' +
-        '<div style="width:' + pctSem + '%;height:100%;background:' + colorSem + ';border-radius:3px;transition:width .4s;"></div>' +
-      '</div>' +
-      '<span style="font-family:monospace;font-size:10px;color:' + colorSem + ';">' + pctSem + '%</span>' +
-    '</div>' +
-    '</div>';
   // Cardio inicio alumno
   var avCardioInicioHTML = av_cardioInicio ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ Cardio Inicial</div>' +
@@ -2180,34 +2114,16 @@ function avPauta(a) {
     '<div style="display:flex;flex-direction:column;gap:5px;">' +
     av_movilidad.map(function(m) { return '<div style="font-size:12px;color:var(--tx2);">• ' + m.nombre + ' — ' + m.series + 'x' + m.reps + (m.obs?' <span style="color:var(--tx3);">(' + m.obs + ')</span>':'') + '</div>'; }).join('') +
     '</div></div>' : '';
-  e.innerHTML = resumenSemHTML + avSemIndicator + avCardioInicioHTML + avMovilidadHTML + (racha2>0?'<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--am);">' + racha2 + ' 🔥</span><span style="font-size:12px;color:var(--am);">sesiones seguidas</span></div>':'') +
+  e.innerHTML = avSemIndicator + avCardioInicioHTML + avMovilidadHTML + (racha2>0?'<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--am);">' + racha2 + ' 🔥</span><span style="font-size:12px;color:var(--am);">sesiones seguidas</span></div>':'') +
     (cIconAv?'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;font-size:12px;">' + cIconAv + '</div>':'') +
     '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
     '<span style="font-size:12px;color:var(--tx2);">Hoy: <b>' + new Date().toLocaleDateString('es-CL') + '</b></span>' +
-    '<button class="btn bg sm" onclick="regSes()">✓ Registrar sesion hoy</button>' +
-    '<button class="btn bp" onclick="completarPauta()" style="background:var(--ac);color:#080C10;font-weight:700;">✓ Pauta completada →</button></div>' +
+    '<button class="btn bg sm" onclick="regSes()">✓ Registrar sesion hoy</button></div>' +
     '<div class="tabs">' + semTabs2 + '</div><div class="tabs">' + dayTabs2 + '</div><div id="av-dia"></div>';
   avRenderDia(a);
 }
 window.avSem = function(i) { S.avsem = i; avPauta(S.alumnos[S.uid]); };
 window.avDia = function(i) { S.avdia = i; avPauta(S.alumnos[S.uid]); };
-
-window.completarPauta = async function() {
-  var a = S.alumnos[S.uid];
-  var totalDiasAl = (a.dias_plan ? Object.keys(a.dias_plan).length : DIAS) || DIAS;
-  var diaActual2 = (a.dia_actual !== undefined && a.dia_actual !== null) ? parseInt(a.dia_actual) : 0;
-  var siguienteDia = (diaActual2 + 1) % totalDiasAl;
-  // Registrar sesion automaticamente
-  var ses2 = { fecha: new Date().toISOString().split('T')[0], dia: diaActual2, sem: S.avsem };
-  await FP('alumnos/' + S.uid + '/sesiones', ses2);
-  if (!S.alumnos[S.uid].sesiones) S.alumnos[S.uid].sesiones = {};
-  // Avanzar al siguiente dia
-  await FU('alumnos/' + S.uid, { dia_actual: siguienteDia });
-  S.alumnos[S.uid].dia_actual = siguienteDia;
-  S.avdia = siguienteDia;
-  toast('Sesion completada! Dia ' + (siguienteDia+1) + ' es el siguiente 💪');
-  avPauta(S.alumnos[S.uid]);
-};
 
 window.regSes = async function() {
   var ses2 = { fecha: new Date().toISOString().split('T')[0], dia: S.avdia, sem: S.avsem };
@@ -2317,8 +2233,7 @@ function avRenderDia(a) {
         }
       }
     });
-    var obsAl = (dia && dia.obs_alumno && dia.obs_alumno[si]) ? dia.obs_alumno[si] : '';
-  var av_cardioFinal = dia.cardio && dia.cardio.final ? dia.cardio.final : null;
+    var obsAl = (dia2_av && dia2_av.obs_alumno && dia2_av.obs_alumno[si]) ? dia2_av.obs_alumno[si] : (dia && dia.obs_alumno && dia.obs_alumno[si] ? dia.obs_alumno[si] : '');
   var avCardioFinalHTML = av_cardioFinal ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ Cardio Final</div>' +
     '<div style="font-size:14px;font-weight:600;">' + av_cardioFinal.actividad + '</div>' +
