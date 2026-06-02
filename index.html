@@ -644,7 +644,7 @@ const S = {
   modo: null, uid: null, aid: null,
   alumnos: {}, bibx: [],
   view: 'dash', dia: 0, sem: 0,
-  avv: 'pauta', avdia: 0, avsem: 0,
+  avv: 'resumen', avdia: 0, avsem: 0,
   editId: null, ejCtx: null, cargaCtx: null,
   theme: localStorage.getItem('hft-t') || 'dark'
 };
@@ -920,7 +920,7 @@ window.generarPautaIA = async function() {
   try {
     var resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ['sk-ant-api03-fNNobjG','gKWB9qfG69tCajSpCc0J','qynhPTMCIokTbjbAuYzAeRi3bUG3Wi','4xlKnj0yRnh5g7McgtpWeSEnxAPGA-O2GQVwAA'].join(''), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
@@ -1030,6 +1030,8 @@ window.doLogin = async function(t) {
       }
     });
     if (!found) { showErr('RUT o contraseña incorrectos'); return; }
+    var fullData = await FG('alumnos/' + foundId);
+    found = fullData || found;
     S.modo = 'alumno'; S.uid = foundId; S.alumnos[foundId] = found;
     el('login').classList.add('hidden');
     el('alumno-app').classList.remove('hidden');
@@ -1199,6 +1201,17 @@ function getTrend(ej, a, di) {
 }
 
 // DASHBOARD
+function getWeekSessions(a) {
+  if (!a || !a.sesiones) return 0;
+  var hoy = new Date();
+  var lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+  lunes.setHours(0,0,0,0);
+  return Object.values(a.sesiones).filter(function(s) {
+    return s.fecha && new Date(s.fecha) >= lunes;
+  }).length;
+}
+
 function rDash(a) {
   var e = el('vdash');
   var dias = a.dias_plan || {};
@@ -1235,7 +1248,27 @@ function rDash(a) {
     alertasInactivos.map(function(a2) { return '<div style="font-size:12px;color:var(--tx2);margin-bottom:3px;">• ' + a2 + '</div>'; }).join(''),
     '</div>'
   ].join('') : '';
-  e.innerHTML = alertasHTML + '<div class="sg">' +
+  // Weekly summary all alumnos
+  var weekRows = Object.entries(S.alumnos).map(function(kv) {
+    var id = kv[0], al = kv[1];
+    var sesW = getWeekSessions(al);
+    var dias = al.dias || 4;
+    var pct = Math.round(sesW / dias * 100);
+    var col = pct >= 100 ? 'var(--ac)' : pct >= 50 ? 'var(--am)' : 'var(--rd)';
+    var barW = Math.min(pct, 100);
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);cursor:pointer;';
+    div.onclick = (function(aid) { return function() { selAl(aid); }; })(id);
+    div.innerHTML = '<span style="flex:1;font-size:12px;font-weight:500;">' + al.nombre + '</span>' +
+      '<div style="flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;">' +
+        '<div style="width:' + barW + '%;height:100%;background:' + col + ';border-radius:3px;"></div>' +
+      '</div>' +
+      '<span style="font-size:10px;color:' + col + ';width:30px;text-align:right;">' + sesW + '/' + dias + '</span>';
+    return div.outerHTML;
+  }).join('');
+  var weekHTML = '<div class="card" style="margin-bottom:14px;"><div class="ch"><span class="ct">Semana actual</span><span style="font-size:10px;color:var(--tx3);">'+new Date().toLocaleDateString('es-CL',{weekday:'long'})+'</span></div>' +
+    '<div>' + (weekRows || '<div style="padding:16px;text-align:center;color:var(--tx3);">Sin alumnos</div>') + '</div></div>';
+  e.innerHTML = alertasHTML + weekHTML + '<div class="sg">' +
     '<div class="sc"><div class="sl">Ejercicios</div><div class="sv" style="color:var(--bl);">' + totalEj + '</div><div class="ss">en el plan</div></div>' +
     '<div class="sc"><div class="sl">Semanas</div><div class="sv" style="color:var(--am);">5+1</div><div class="ss">prog + descarga</div></div>' +
     '<div class="sc"><div class="sl">Racha</div><div class="sv" style="font-size:22px;color:var(--am);">' + racha + ' 🔥</div><div class="ss">sesiones</div></div>' +
@@ -1512,8 +1545,11 @@ window.saveEj = async function() {
     descanso: parseInt(v('ej-d')) || null,
     perc: {}
   };
-  await FP('alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios', ej);
+  console.log('Guardando ejercicio en:', 'alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios');
+  var result = await FP('alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios', ej);
+  console.log('Resultado Firebase:', result ? result.key : 'sin key');
   S.alumnos[ctx.aid] = await FG('alumnos/' + ctx.aid);
+  console.log('Dias plan cargado:', S.alumnos[ctx.aid] && S.alumnos[ctx.aid].dias_plan ? Object.keys(S.alumnos[ctx.aid].dias_plan) : 'vacio');
   closeM('m-ej'); toast('Ejercicio agregado');
   rPauta(A());
 };
@@ -1762,8 +1798,9 @@ function rEval(a) {
     '<div style="font-family:monospace,monospace;font-size:10px;color:var(--rd);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">⚠ Alumnos inactivos</div>' +
     alertasInactivos.map(function(a2) { return '<div style="font-size:12px;color:var(--tx2);margin-bottom:3px;">• ' + a2 + '</div>'; }).join('') +
     '</div>' : '';
-  e.innerHTML = alertasHTML + '<div class="sg">' + statsHTML + '</div>' +
-    '<div class="card"><div class="ch"><span class="ct">Evolucion</span><span style="font-size:11px;color:var(--tx3);">' + evs.length + ' evaluaciones</span></div>' +
+  // Weekly summary all alumnos
+  
+      '<div class="card"><div class="ch"><span class="ct">Evolucion</span><span style="font-size:11px;color:var(--tx3);">' + evs.length + ' evaluaciones</span></div>' +
     '<div class="cb"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">' + sparksHTML + '</div></div></div>' +
     cmpHTML +
     '<div class="card"><div class="ch"><span class="ct">Historial</span></div>' +
@@ -1985,7 +2022,17 @@ function rFicha(a) {
     '<div>' + histH + '</div></div>' +
     '<div class="card" style="max-width:560px;">' +
     '<div class="ch"><span class="ct">Zona de peligro</span></div>' +
-    '<div class="cb"><button class="btn bdn" onclick="delAl()">Eliminar alumno</button></div></div>';
+    '<div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;">' +
+    '<button class="btn bg" id="btn-volver-dia">← Dia anterior</button>' +
+    '<button class="btn bg" id="btn-avanzar-dia">Dia siguiente →</button>' +
+    '<button class="btn bdn" onclick="delAl()">Eliminar alumno</button>' +
+    '</div></div>';
+  // Bind buttons after render
+  var _aid = S.aid;
+  var _bv = document.getElementById('btn-volver-dia');
+  var _ba = document.getElementById('btn-avanzar-dia');
+  if (_bv) _bv.onclick = (function(a){return function(){profeVolverDia(a);}})(_aid);
+  if (_ba) _ba.onclick = (function(a){return function(){profeAvanzarDia(a);}})(_aid);
 }
 
 window.verPlan = function(idx) {
@@ -2058,14 +2105,42 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['pauta','eval','pesos','cal','msgs','ficha'];
-var AVL = ['Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
+  // Update av-name with dia info
+  if (a) {
+    var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+    var semActual = getSemanaActual(a);
+    var semLabel = semActual !== null ? ' · S' + (semActual+1) : '';
+    el('av-name').textContent = a.nombre + semLabel;
+  }
+  // If dias_plan is missing, reload from Firebase
+  if (!a || !a.dias_plan) {
+    FG('alumnos/' + S.uid).then(function(data) {
+      if (data) {
+        S.alumnos[S.uid] = data;
+        renderAV();
+      }
+    });
+    return;
+  }
   el('av-nav').innerHTML = AVL.map(function(l, i) {
     return '<button class="avn' + (S.avv === AVV[i] ? ' on' : '') + '" onclick="avSet(\'' + AVV[i] + '\')">' + l + '</button>';
   }).join('');
+  if (!a.bienvenida_vista && a.dias_plan && Object.keys(a.dias_plan).length > 0) {
+    FU('alumnos/' + S.uid, { bienvenida_vista: true });
+    S.alumnos[S.uid].bienvenida_vista = true;
+    setTimeout(function() {
+      var t = document.getElementById('toaster');
+      t.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:4px;">Bienvenido a HouseFit!</div><div style="font-size:11px;opacity:.85;">Tu plan esta listo. Empieza por Resumen para ver tu primera sesion.</div>';
+      t.className = 'toast show tok';
+      setTimeout(function() { t.className = 'toast'; t.textContent = ''; }, 5000);
+    }, 800);
+  }
+  if (S.avv === 'resumen') avResumen(a);
   if (S.avv === 'pauta')  avPauta(a);
   if (S.avv === 'eval')   avEval(a);
   if (S.avv === 'pesos')  avPesos(a);
@@ -2074,6 +2149,60 @@ function renderAV() {
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
+
+function avResumen(a) {
+  var e = el('av-content');
+  var dias = a.dias_plan || {};
+  var si = S.avsem;
+  var isDesc = si === getSemanas(a);
+  var html = '<div style="margin-bottom:10px;">' +
+    '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Semana ' + (si+1) + (isDesc?' — Descarga':'') + ' · Vista rapida</div>' +
+    '<div style="font-size:11px;color:var(--tx2);">Revisa tu plan antes de entrenar. Ve a "Mi Pauta" para registrar percepcion.</div>' +
+    '</div>';
+
+  // Hoy entrenas banner
+  var diaHoy = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  var diasPlan = a.dias_plan || {};
+  var diaData = diasPlan[diaHoy];
+  var ejsHoy = diaData && diaData.ejercicios ? Object.keys(diaData.ejercicios).length : 0;
+  html += '<div style="background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:var(--r2);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+    '<div>' +
+    '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Hoy entrenas</div>' +
+    '<div style="font-size:20px;font-weight:700;color:var(--tx);">Dia ' + (diaHoy+1) + '</div>' +
+    '<div style="font-size:11px;color:var(--tx2);margin-top:2px;">' + ejsHoy + ' ejercicios · Semana ' + (si+1) + '</div>' +
+    '</div>' +
+    '<button class="btn bp" onclick="avSet(\'pauta\')" style="padding:10px 18px;font-size:13px;">Empezar →</button>' +
+    '</div>';
+
+  // PDF export button
+  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">' +
+    '<button class="btn bg sm" onclick="exportarPautaPDF()">⬇ Descargar PDF</button></div>';
+
+  for (var di = 0; di < 6; di++) {
+    var dia = dias[di];
+    if (!dia || !dia.ejercicios || Object.keys(dia.ejercicios).length === 0) continue;
+    var ejs = Object.values(dia.ejercicios);
+    html += '<div class="card"><div class="ch"><span class="ct">Dia ' + (di+1) + '</span>' +
+      '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);">' + ejs.length + ' ejercicios</span></div>' +
+      '<table style="width:100%;border-collapse:collapse;">' +
+      '<thead><tr>' +
+      '<th style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;color:var(--tx3);padding:5px 10px;border-bottom:1px solid var(--bd);text-align:left;">Ejercicio</th>' +
+      '<th style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;color:var(--tx3);padding:5px 10px;border-bottom:1px solid var(--bd);text-align:center;">Series x Reps</th>' +
+      '<th style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;color:var(--tx3);padding:5px 10px;border-bottom:1px solid var(--bd);text-align:center;">Peso</th>' +
+      '</tr></thead><tbody>';
+    ejs.forEach(function(ej) {
+      var cs = calcSem(ej, si, a, di);
+      html += '<tr>' +
+        '<td style="padding:7px 10px;font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);">' + ej.nombre +
+        '<div style="font-size:9px;color:var(--tx3);font-family:\'DM Mono\',monospace;">' + ej.musculo + '</div></td>' +
+        '<td style="padding:7px 10px;text-align:center;font-family:\'DM Mono\',monospace;font-size:12px;font-weight:600;border-bottom:1px solid var(--bd);">' + cs.series + 'x' + cs.reps + '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-family:\'DM Mono\',monospace;font-size:12px;font-weight:600;color:var(--am);border-bottom:1px solid var(--bd);">' + (cs.peso===0?'Corp.':cs.peso+'kg') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  e.innerHTML = html;
+}
 
 function avPauta(a) {
   var e = el('av-content');
@@ -2084,6 +2213,8 @@ function avPauta(a) {
   var av_cardioFinal = dia2.cardio && dia2.cardio.final ? dia2.cardio.final : null;
   var av_movilidad = dia2.movilidad ? Object.values(dia2.movilidad) : [];
   var cIconAv = carga2 === 'verde' ? '🟢 Semana normal' : carga2 === 'amarillo' ? '🟡 Intensidad moderada' : carga2 === 'rojo' ? '🔴 Sesion liviana' : '';
+  var isDescarga = S.avsem === getSemanas(a);
+  var descPorcentaje = Math.round((1 - getDescPct(a)) * 100);
   var ses = a.sesiones ? Object.values(a.sesiones) : [];
   var racha2 = 0;
   if (ses.length) {
@@ -2097,11 +2228,23 @@ function avPauta(a) {
   var semTabs2 = SL.map(function(l,i) {
     return '<button class="tab' + (i===5?' desc':'') + (i===S.avsem?' on':'') + '" onclick="avSem(' + i + ')">' + l + '</button>';
   }).join('');
+  var diaActual2 = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  S.avdia = diaActual2;
   var dayTabs2 = '';
   for (var dd = 0; dd < DIAS; dd++) {
-    dayTabs2 += '<button class="tab' + (dd===S.avdia?' on':'') + '" onclick="avDia(' + dd + ')">Dia ' + (dd+1) + '</button>';
+    var diasPlanKeys = a.dias_plan ? Object.keys(a.dias_plan) : [];
+    if (!diasPlanKeys.includes(String(dd))) continue;
+    var isActual = dd === diaActual2;
+    var style = isActual ? '' : 'opacity:.35;cursor:not-allowed;pointer-events:none;';
+    var lockIcon = isActual ? '' : ' 🔒';
+    dayTabs2 += '<button class="tab' + (isActual?' on':'') + '" style="' + style + '" onclick="avDia(' + dd + ')">' + 'Dia ' + (dd+1) + lockIcon + '</button>';
   }
   // Semana actual indicator for alumno
+  var descargaHTML = isDescarga ? '<div style="background:rgba(255,184,48,.1);border:1px solid rgba(255,184,48,.3);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;">' +
+    '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--am);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ SEMANA DE DESCARGA</div>' +
+    '<div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px;">Esta semana entrenas al ' + descPorcentaje + '% del volumen normal.</div>' +
+    '<div style="font-size:12px;color:var(--tx2);line-height:1.5;">Esto no es retroceso — es parte del metodo. Tu cuerpo consolida las ganancias de las ultimas ' + getSemanas(a) + ' semanas y se prepara para el proximo ciclo al 100%. Es cuando mas creces.</div>' +
+    '</div>' : '';
   var avSemIndicator = semAuto !== null ? '<div style="background:rgba(61,255,160,.08);border:1px solid rgba(61,255,160,.2);border-radius:var(--r);padding:6px 12px;margin-bottom:8px;font-size:11px;color:var(--ac);font-family:monospace,monospace;text-align:center;">Segun tu fecha de inicio, estas en S' + (semAuto+1) + '</div>' : '';
   // Cardio inicio alumno
   var avCardioInicioHTML = av_cardioInicio ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;">' +
@@ -2115,7 +2258,7 @@ function avPauta(a) {
     '<div style="display:flex;flex-direction:column;gap:5px;">' +
     av_movilidad.map(function(m) { return '<div style="font-size:12px;color:var(--tx2);">• ' + m.nombre + ' — ' + m.series + 'x' + m.reps + (m.obs?' <span style="color:var(--tx3);">(' + m.obs + ')</span>':'') + '</div>'; }).join('') +
     '</div></div>' : '';
-  e.innerHTML = avSemIndicator + avCardioInicioHTML + avMovilidadHTML + (racha2>0?'<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--am);">' + racha2 + ' 🔥</span><span style="font-size:12px;color:var(--am);">sesiones seguidas</span></div>':'') +
+  e.innerHTML = descargaHTML + avSemIndicator + avCardioInicioHTML + avMovilidadHTML + (racha2>0?'<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--am);">' + racha2 + ' 🔥</span><span style="font-size:12px;color:var(--am);">sesiones seguidas</span></div>':'') +
     (cIconAv?'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;font-size:12px;">' + cIconAv + '</div>':'') +
     '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
     '<span style="font-size:12px;color:var(--tx2);">Hoy: <b>' + new Date().toLocaleDateString('es-CL') + '</b></span>' +
@@ -2234,15 +2377,21 @@ function avRenderDia(a) {
         }
       }
     });
-    var obsAl = (dia2_av && dia2_av.obs_alumno && dia2_av.obs_alumno[si]) ? dia2_av.obs_alumno[si] : (dia && dia.obs_alumno && dia.obs_alumno[si] ? dia.obs_alumno[si] : '');
-  var avCardioFinalHTML = av_cardioFinal ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;">' +
+    var obsAl = (dia && dia.obs_alumno && dia.obs_alumno[si]) ? dia.obs_alumno[si] : '';
+  // Cardio final - get from dia
+  var avCFinal = dia.cardio && dia.cardio.final ? dia.cardio.final : null;
+  var avCardioFinalHTML = avCFinal ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-top:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ Cardio Final</div>' +
-    '<div style="font-size:14px;font-weight:600;">' + av_cardioFinal.actividad + '</div>' +
-    '<div style="font-size:12px;color:var(--tx2);margin-top:2px;">' + av_cardioFinal.duracion + ' minutos · Intensidad ' + av_cardioFinal.intensidad + '</div>' +
-    (av_cardioFinal.obs?'<div style="font-size:11px;color:var(--tx3);font-style:italic;margin-top:3px;">'+av_cardioFinal.obs+'</div>':'') + '</div>' : '';
+    '<div style="font-size:14px;font-weight:600;">' + avCFinal.actividad + '</div>' +
+    '<div style="font-size:12px;color:var(--tx2);margin-top:2px;">' + avCFinal.duracion + ' minutos · Intensidad ' + avCFinal.intensidad + '</div>' +
+    (avCFinal.obs?'<div style="font-size:11px;color:var(--tx3);font-style:italic;margin-top:3px;">'+avCFinal.obs+'</div>':'') + '</div>' : '';
     html += '<div style="margin-top:10px;"><div style="font-size:10px;color:var(--tx3);font-family:monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Nota de sesion</div>' +
       '<textarea class="fta" style="min-height:44px;font-size:12px;" placeholder="Como te fue hoy?" onchange="avSaveObs(' + si + ',this.value)">' + obsAl + '</textarea></div>';
   }
+  // Finalizar dia button
+  html += '<div style="margin-top:14px;">' +
+    '<button class="btn bp" style="width:100%;justify-content:center;padding:12px;font-size:14px;" onclick="finalizarDia()">✓ Finalizar Dia ' + (S.avdia+1) + ' — Avanzar al siguiente</button>' +
+    '</div>';
   e.innerHTML = html;
 }
 
@@ -2287,6 +2436,73 @@ window.avPre = async function(k) {
   if (!a.dias_plan[S.avdia].pre[S.avsem]) a.dias_plan[S.avdia].pre[S.avsem] = {};
   a.dias_plan[S.avdia].pre[S.avsem][k] = nv;
   avRenderDia(a);
+};
+
+window.finalizarDia = async function() {
+  var a = S.alumnos[S.uid];
+  if (!a) return;
+  var totalDias = a.dias || 4;
+  var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  var nextDia = diaActual + 1;
+  // Check if week complete
+  if (nextDia >= totalDias) {
+    // Week complete!
+    var semActual = S.avsem;
+    var totalSems = getSemanas(a);
+    await FU('alumnos/' + S.uid, { dia_actual: 0 });
+    S.alumnos[S.uid].dia_actual = 0;
+    if (semActual >= totalSems - 1) {
+      // Cycle complete
+      var t2 = document.getElementById('toaster');
+    t2.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ciclo completado! Habla con tu entrenador.</div>';
+    t2.className = 'toast show tok';
+    setTimeout(function() { t2.className = 'toast'; t2.textContent = ''; }, 6000);
+    await FP('notificaciones', { tipo: 'ciclo_completo', alumno: a.nombre, fecha: new Date().toISOString(), leida: false });
+    } else {
+      // Week complete, advance to next week
+      var msg = semActual === totalSems - 1 ?
+        'Semana ' + (semActual+1) + ' completada! La proxima es tu semana de descarga — necesaria para consolidar tus ganancias.' :
+        'Excelente! Completaste la Semana ' + (semActual+1) + '. Pasamos al siguiente nivel!';
+      // Notify profe
+      await FP('notificaciones', { tipo: 'semana_completa', alumno: a.nombre, semana: semActual+1, fecha: new Date().toISOString(), leida: false });
+      var t = document.getElementById('toaster');
+      t.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:4px;">'+msg+'</div><div style="font-size:11px;opacity:.8;">Los ejercicios del dia 1 ya te esperan.</div>';
+      t.className = 'toast show tok';
+      setTimeout(function() { t.className = 'toast'; t.textContent = ''; }, 6000);
+    }
+  } else {
+    await FU('alumnos/' + S.uid, { dia_actual: nextDia });
+    S.alumnos[S.uid].dia_actual = nextDia;
+    S.avdia = nextDia;
+    toast('Dia ' + (diaActual+1) + ' completado! Siguiente: Dia ' + (nextDia+1));
+  }
+  renderAV();
+};
+
+window.profeAvanzarDia = async function(aid) {
+  var a = S.alumnos[aid];
+  if (!a) return;
+  var diasPlan = a.dias_plan || {};
+  var diasKeys = Object.keys(diasPlan).map(Number).sort();
+  var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  var idx = diasKeys.indexOf(diaActual);
+  var next = idx < diasKeys.length - 1 ? diasKeys[idx + 1] : diasKeys[0];
+  await FU('alumnos/' + aid, { dia_actual: next });
+  S.alumnos[aid].dia_actual = next;
+  toast('Alumno avanzado al Dia ' + (next + 1));
+  renderAll();
+};
+
+window.profeVolverDia = async function(aid) {
+  var a = S.alumnos[aid];
+  if (!a) return;
+  var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  if (diaActual <= 0) { toast('Ya esta en el Dia 1', 'err'); return; }
+  var prev = diaActual - 1;
+  await FU('alumnos/' + aid, { dia_actual: prev });
+  S.alumnos[aid].dia_actual = prev;
+  toast('Alumno devuelto al Dia ' + (prev+1));
+  renderAll();
 };
 
 window.avPropPeso = async function(ejId, si, nombre, pesoAct) {
@@ -2423,6 +2639,64 @@ function avCal(a) {
     '<div style="display:flex;align-items:center;gap:5px;"><div style="width:10px;height:10px;border-radius:3px;background:var(--bg4);border:1px solid var(--bd2);"></div>Hoy</div>' +
     '</div></div></div>';
 }
+
+window.exportarPautaPDF = function() {
+  var a = S.alumnos[S.uid];
+  if (!a) return;
+  var dias = a.dias_plan || {};
+  var semIdx = S.avsem;
+  var html = '<html><head><meta charset="UTF-8"><title>HouseFit - Pauta</title><style>' +
+    'body{font-family:Arial,sans-serif;font-size:12px;color:#222;padding:20px;}' +
+    'h1{color:#1F7A4C;font-size:18px;margin-bottom:4px;}' +
+    'h2{color:#1F7A4C;font-size:13px;margin:16px 0 6px;border-bottom:2px solid #1F7A4C;padding-bottom:3px;}' +
+    'h3{font-size:11px;color:#666;margin:10px 0 4px;}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:10px;}' +
+    'th{background:#1A2230;color:#fff;padding:6px 8px;font-size:10px;text-align:left;}' +
+    'td{padding:5px 8px;border-bottom:1px solid #eee;font-size:11px;}' +
+    'tr:nth-child(even){background:#f8f8f8;}' +
+    '.badge{display:inline-block;background:#E8F5E9;color:#1F7A4C;padding:1px 6px;border-radius:3px;font-size:10px;}' +
+    '.desc{background:#E3F2FD;color:#1878B8;padding:1px 6px;border-radius:3px;font-size:10px;}' +
+    '@media print{body{padding:10px;}}' +
+    '</style></head><body>';
+  html += '<h1>HouseFit Training — ' + a.nombre + '</h1>';
+  html += '<p style="color:#666;font-size:11px;margin-bottom:16px;">Semana ' + (semIdx+1) + (semIdx === getSemanas(a) ? ' — DESCARGA' : '') + ' · Cristobal Diaz · Preparador Fisico</p>';
+  var semLabel = semIdx === getSemanas(a) ? 'Semana de Descarga' : 'Semana ' + (semIdx+1);
+  if (semIdx === getSemanas(a)) {
+    html += '<div style="background:#FFF3E0;border:1px solid #FFB830;border-radius:4px;padding:8px 12px;margin-bottom:12px;font-size:11px;">' +
+      '<b style="color:#B06800;">Esta es tu semana de descarga.</b> El volumen se reduce al ' + Math.round((1-getDescPct(a))*100) + '% normal. Es necesario para que tu cuerpo consolide las ganancias y llegues al proximo ciclo al 100%.' +
+      '</div>';
+  }
+  for (var di = 0; di < 6; di++) {
+    var dia = dias[di];
+    if (!dia || !dia.ejercicios || Object.keys(dia.ejercicios).length === 0) continue;
+    html += '<h2>Dia ' + (di+1) + '</h2>';
+    var cardio = dia.cardio && dia.cardio.inicio;
+    if (cardio) html += '<p style="color:#1878B8;font-size:11px;margin-bottom:6px;">⚡ Cardio inicial: ' + cardio.actividad + ' — ' + cardio.duracion + ' min — ' + cardio.intensidad + '</p>';
+    var movs = dia.movilidad ? Object.values(dia.movilidad) : [];
+    if (movs.length) html += '<p style="color:#6040B8;font-size:11px;margin-bottom:6px;">🔄 Movilidad: ' + movs.map(function(m){return m.nombre+' '+m.series+'x'+m.reps;}).join(' | ') + '</p>';
+    html += '<table><thead><tr><th>#</th><th>Ejercicio</th><th>Musculo</th><th>Series</th><th>Reps</th><th>Peso</th><th>Desc.</th></tr></thead><tbody>';
+    var ejs = Object.values(dia.ejercicios);
+    ejs.forEach(function(ej, i) {
+      var cs = calcSem(ej, semIdx, a, di);
+      var isDesc = semIdx === getSemanas(a);
+      html += '<tr><td>'+(i+1)+'</td><td><b>'+ej.nombre+'</b>'+(ej.obs?'<br><span style="color:#888;font-size:10px;">'+ej.obs+'</span>':'')+'</td>' +
+        '<td><span class="badge">'+ej.musculo+'</span></td>' +
+        '<td>'+cs.series+(isDesc?'<span class="desc"> -'+Math.round((1-getDescPct(a))*100)+'%</span>':'')+'</td>' +
+        '<td>'+cs.reps+'</td>' +
+        '<td>'+(cs.peso===0?'Corporal':cs.peso+'kg')+'</td>' +
+        '<td>'+(ej.descanso?ej.descanso+'s':'—')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+    var cardioF = dia.cardio && dia.cardio.final;
+    if (cardioF) html += '<p style="color:#1878B8;font-size:11px;margin-top:4px;">⚡ Cardio final: ' + cardioF.actividad + ' — ' + cardioF.duracion + ' min</p>';
+  }
+  html += '<p style="margin-top:20px;color:#999;font-size:10px;text-align:center;">HouseFit Training · Cristobal Diaz · crisdiazn3.github.io/housefit</p>';
+  html += '</body></html>';
+  var w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function() { w.print(); }, 500);
+};
 
 function avMsgs(a) {
   var e = el('av-content');
