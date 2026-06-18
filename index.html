@@ -616,6 +616,65 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<div class="ov hidden" id="m-add-prof">
+  <div class="modal">
+    <div class="mt">Agregar profesional</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Nombre</label><input class="fi" id="prof-nombre" placeholder="Dr. Juan Perez"></div>
+      <div class="fg"><label class="fl">Especialidad</label><input class="fi" id="prof-esp" placeholder="Nutricionista, Kinesiologo..."></div>
+      <div class="fg"><label class="fl">WhatsApp</label><input class="fi" id="prof-wa" placeholder="+56912345678"></div>
+      <div class="fg"><label class="fl">Email</label><input class="fi" id="prof-email" placeholder="correo@ejemplo.com"></div>
+      <div class="fg"><label class="fl">Instagram</label><input class="fi" id="prof-ig" placeholder="@usuario"></div>
+      <div class="fg"><label class="fl">Foto URL (opcional)</label><input class="fi" id="prof-foto" placeholder="https://..."></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-prof')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveProf()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-archivar">
+  <div class="modal">
+    <div class="mt">Archivar plan actual</div>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:14px;">El plan actual se guarda en el historial del alumno. Despues podras ver sus ejercicios y pesos para hacer progresion en el nuevo ciclo.</p>
+    <div class="fg" style="margin-bottom:14px;">
+      <label class="fl">Nombre del plan (opcional)</label>
+      <input class="fi" id="archivar-label" placeholder="Ej: Ciclo 1 — Hipertrofia casa">
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-archivar')">Cancelar</button>
+      <button class="btn bp sm" onclick="archivarPlan()">Archivar y empezar nuevo</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-set-diasem">
+  <div class="modal">
+    <div class="mt">Asignar dia y semana al alumno</div>
+    <div class="g2" style="margin-bottom:16px;">
+      <div class="fg"><label class="fl">Dia</label>
+        <select class="fs" id="set-dia-sel">
+          <option value="0">Dia 1</option><option value="1">Dia 2</option>
+          <option value="2">Dia 3</option><option value="3">Dia 4</option>
+          <option value="4">Dia 5</option><option value="5">Dia 6</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Semana</label>
+        <select class="fs" id="set-sem-sel">
+          <option value="0">S1</option><option value="1">S2</option>
+          <option value="2">S3</option><option value="3">S4</option>
+          <option value="4">S5</option><option value="5">S6 Descarga</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-set-diasem')">Cancelar</button>
+      <button class="btn bp sm" onclick="profeSetDiaSem()">Asignar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toaster" class="toast"></div>
 
 <div class="ov hidden" id="m-resumen-pauta">
@@ -702,6 +761,18 @@ function el(id) { return document.getElementById(id); }
 function v(id) { var e = el(id); return e ? e.value : ''; }
 function closeM(id) { el(id).classList.add('hidden'); }
 window.closeM = closeM;
+
+window.archivarPlan = async function() {
+  var a = A(); if (!a) return;
+  var label = el('archivar-label') ? el('archivar-label').value.trim() : '';
+  if (!label) label = 'Ciclo ' + new Date().toLocaleDateString('es-CL');
+  await FP('alumnos/' + S.aid + '/historial_planes', { label:label, fecha:new Date().toISOString().slice(0,10), dias_plan:a.dias_plan||{}, semanas:getSemanas(a), desc_pct:a.desc_pct||60 });
+  await FU('alumnos/' + S.aid, { dias_plan:{}, dia_actual:0, sem_actual:0 });
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  closeM('m-archivar');
+  toast('Plan archivado. Ya puedes cargar el nuevo ciclo.');
+  renderAll();
+};
 
 window.openResumenPauta = function() {
   var a = A();
@@ -1184,6 +1255,8 @@ function renderAll() {
       abtn('Semaforo', 'bg', function() { openCarga(S.aid, S.sem); });
     abtn('Copiar dia', 'bg', function() { openCopyDay(); });
     abtn('Ver resumen', 'bg', function() { openResumenPauta(); });
+    abtn('Archivar plan', 'brd', function() { el('m-archivar').classList.remove('hidden'); });
+    abtn('+ Profesional', 'bg', function() { openAddProf(); });
     abtn('+ Cardio', 'bg', function() { openCardioModal(); });
     abtn('+ Movilidad', 'bg', function() { openMovilidadModal(); });
     abtn('IA Pauta', 'bp', function() { el('m-ia-pauta').classList.remove('hidden'); });
@@ -1874,24 +1947,44 @@ function rEval(a) {
 
 // MENSAJES
 window.sendMsg = async function() {
-  var txt = v('msg-txt').trim();
-  if (!txt) { toast('Escribe un mensaje', 'err'); return; }
-  var msg = { texto: txt, fecha: new Date().toISOString(), de: 'Cristobal Diaz', leido: false };
-  await FP('alumnos/' + S.aid + '/mensajes', msg);
+  var txt = el('msg-txt') ? el('msg-txt').value.trim() : '';
+  if (!txt) { toast('Escribe un mensaje','err'); return; }
+  if (!S.aid) return;
+  if (el('msg-txt')) el('msg-txt').value = '';
+  await FP('alumnos/' + S.aid + '/mensajes', { texto:txt, fecha:new Date().toISOString(), de:'profe', leido:true });
   S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
-  closeM('m-msg'); el('msg-txt').value = ''; toast('Mensaje enviado'); rMsgs(A());
+  toast('Mensaje enviado');
+  rMsgs(S.alumnos[S.aid]);
 };
 
 function rMsgs(a) {
   var e = el('vmsgs');
-  var msgs = a.mensajes ? Object.values(a.mensajes).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}) : [];
-  e.innerHTML = '<div class="card"><div class="ch"><span class="ct">Mensajes a ' + a.nombre + '</span></div>' +
-    '<div>' + (msgs.length ? msgs.map(function(m) {
-      return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
-        '<div style="font-size:10px;color:var(--tx3);font-family:monospace;margin-bottom:5px;">' + new Date(m.fecha).toLocaleDateString('es-CL') + '</div>' +
-        '<div style="font-size:13px;line-height:1.6;">' + m.texto + '</div></div>';
-    }).join('') : '<div style="text-align:center;padding:36px;color:var(--tx3);">Sin mensajes</div>') + '</div></div>';
+  var msgs = a.mensajes ? Object.values(a.mensajes).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}) : [];
+  var chatHTML = msgs.map(function(m) {
+    var isProfe = m.de === 'profe' || !m.de;
+    var align = isProfe ? 'flex-end' : 'flex-start';
+    var bg = isProfe ? 'var(--ac2)' : 'var(--bg3)';
+    var clr = isProfe ? 'var(--ac)' : 'var(--tx)';
+    var brd = isProfe ? '1px solid rgba(61,255,160,.2)' : '1px solid var(--bd)';
+    var lbl = isProfe ? 'Tu' : a.nombre;
+    return '<div style="display:flex;justify-content:'+align+';margin-bottom:10px;">'+
+      '<div style="max-width:80%;background:'+bg+';border:'+brd+';border-radius:12px;padding:10px 14px;">'+
+      '<div style="font-size:9px;color:var(--tx3);font-family:monospace;margin-bottom:4px;">'+lbl+' - '+new Date(m.fecha).toLocaleDateString('es-CL')+'</div>'+
+      '<div style="font-size:13px;color:'+clr+';line-height:1.5;">'+m.texto+'</div>'+
+      '</div></div>';
+  }).join('');
+  e.innerHTML = '<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 220px);">'+
+    '<div class="ch"><span class="ct">Chat con '+a.nombre+'</span></div>'+
+    '<div id="profe-chat" style="flex:1;overflow-y:auto;padding:14px;">'+
+    (chatHTML || '<div style="color:var(--tx3);font-size:12px;text-align:center;padding:20px;">Sin mensajes</div>')+
+    '</div>'+
+    '<div style="padding:12px;border-top:1px solid var(--bd);display:flex;gap:8px;">'+
+    '<input class="fi" id="msg-txt" placeholder="Escribe un mensaje..." style="flex:1;" onkeydown="if(event.key===\'Enter\')sendMsg()">'+
+    '<button class="btn bp sm" onclick="sendMsg()">Enviar</button>'+
+    '</div></div>';
+  setTimeout(function(){var c=document.getElementById('profe-chat');if(c)c.scrollTop=c.scrollHeight;},50);
 }
+
 
 // PAGOS
 function rPagos() {
@@ -2068,7 +2161,9 @@ function rFicha(a) {
       '<div style="font-size:10px;color:var(--tx3);font-family:monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">' + x[0] + '</div>' +
       '<div style="font-size:13px;font-weight:500;">' + x[1] + '</div></div>';
   }).join('');
-  var historial = a.historial_pautas ? Object.values(a.historial_pautas).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}) : [];
+  var histPautas = a.historial_pautas ? Object.values(a.historial_pautas) : [];
+  var histPlanes = a.historial_planes ? Object.values(a.historial_planes) : [];
+  var historial = histPautas.concat(histPlanes).sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); });
   var histH = historial.length === 0
     ? '<div style="padding:16px;font-size:12px;color:var(--tx3);">Sin planes archivados.</div>'
     : historial.map(function(h, i) {
@@ -2100,9 +2195,12 @@ function rFicha(a) {
       b2.className = 'btn bg'; b2.textContent = 'Dia siguiente →';
       b2.onclick = function() { profeAvanzarDia(aid); };
       var b3 = document.createElement('button');
-      b3.className = 'btn bdn'; b3.textContent = 'Eliminar alumno';
-      b3.onclick = function() { delAl(); };
-      zd.appendChild(b1); zd.appendChild(b2); zd.appendChild(b3);
+      b3.className = 'btn bg'; b3.textContent = 'Asignar dia/semana';
+      b3.onclick = function() { el('m-set-diasem').classList.remove('hidden'); };
+      var b4 = document.createElement('button');
+      b4.className = 'btn bdn'; b4.textContent = 'Eliminar alumno';
+      b4.onclick = function() { delAl(); };
+      zd.appendChild(b1); zd.appendChild(b2); zd.appendChild(b3); zd.appendChild(b4);
     }
   })(S.aid);
 }
@@ -2177,8 +2275,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2203,6 +2301,7 @@ function renderAV() {
   if (S.avv === 'pesos')  avPesos(a);
   if (S.avv === 'cal')    avCal(a);
   if (S.avv === 'msgs')   avMsgs(a);
+  if (S.avv === 'equipo') avEquipo(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
@@ -2277,11 +2376,19 @@ function avPauta(a) {
       if (Math.round((r3-d3)/86400000) <= 1) { racha2++; r3=d3; } else break;
     }
   }
-  var semTabs2 = SL.map(function(l,i) {
-    return '<button class="tab' + (i===5?' desc':'') + (i===S.avsem?' on':'') + '" onclick="avSem(' + i + ')">' + l + '</button>';
+  var totalSemsAv = getSemanas(a);
+  var SL_AV = [];
+  for (var _si=0; _si<totalSemsAv; _si++) SL_AV.push('S'+(_si+1));
+  SL_AV.push('S'+(totalSemsAv+1)+' Desc.');
+  var semTabs2 = SL_AV.map(function(l,i) {
+    var isActSem = i === semActualAv;
+    var lockSt = isActSem ? '' : 'opacity:.35;cursor:not-allowed;pointer-events:none;';
+    return '<button class="tab' + (i===totalSemsAv?' desc':'') + (isActSem?' on':'') + '" style="' + lockSt + '" onclick="avSem('+i+')">' + l + (isActSem?'':' ?') + '</button>';
   }).join('');
   var diaActualAv = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  var semActualAv = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
   S.avdia = diaActualAv;
+  S.avsem = semActualAv;
   var dayTabs2 = '';
   var diasPlanKeys2 = a.dias_plan ? Object.keys(a.dias_plan) : [];
   for (var dd = 0; dd < DIAS; dd++) {
@@ -2487,29 +2594,51 @@ window.avPre = async function(k) {
 window.finalizarDia = async function() {
   var a = S.alumnos[S.uid];
   if (!a) return;
-  var totalDias = a.dias || 4;
   var diasPlan = a.dias_plan || {};
   var diasKeys = Object.keys(diasPlan).map(Number).sort();
   var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
-  var idx = diasKeys.indexOf(diaActual);
-  var nextDia = idx < diasKeys.length - 1 ? diasKeys[idx + 1] : null;
-
+  var semActual = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
+  var totalSems = getSemanas(a);
+  var idx2 = diasKeys.indexOf(diaActual);
+  var nextDia = idx2 < diasKeys.length - 1 ? diasKeys[idx2 + 1] : null;
+  await FP('alumnos/' + S.uid + '/sesiones', { fecha: new Date().toISOString().slice(0,10), dia: diaActual, sem: semActual });
   if (nextDia === null) {
-    // Semana completa
-    await FU('alumnos/' + S.uid, { dia_actual: diasKeys[0] });
-    S.alumnos[S.uid].dia_actual = diasKeys[0];
-    var t = el('toaster');
-    t.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:4px;">Excelente! Semana completada!</div>' +
-      '<div style="font-size:11px;opacity:.85;">Descansa bien. El proximo ciclo empieza en el Dia 1.</div>';
-    t.className = 'toast show tok';
-    setTimeout(function() { t.className = 'toast'; t.textContent = ''; }, 5000);
+    var nextSem = semActual + 1;
+    if (nextSem > totalSems) {
+      await FU('alumnos/' + S.uid, { dia_actual: diasKeys[0], sem_actual: 0 });
+      S.alumnos[S.uid].dia_actual = diasKeys[0]; S.alumnos[S.uid].sem_actual = 0;
+      var t = el('toaster');
+      t.innerHTML = '<div style="font-size:15px;font-weight:700;margin-bottom:5px;">Ciclo completado!</div><div style="font-size:11px;opacity:.85;">Habla con tu entrenador para el siguiente plan.</div>';
+      t.className = 'toast show tok'; setTimeout(function(){t.className='toast';t.textContent='';},7000);
+      await FP('notificaciones',{tipo:'ciclo_completo',alumno:a.nombre,fecha:new Date().toISOString(),leida:false});
+    } else {
+      await FU('alumnos/' + S.uid, { dia_actual: diasKeys[0], sem_actual: nextSem });
+      S.alumnos[S.uid].dia_actual = diasKeys[0]; S.alumnos[S.uid].sem_actual = nextSem;
+      var isDesc = nextSem === totalSems;
+      var msg = isDesc ? 'Semana completada. La proxima es tu semana de descarga.' : 'Semana completada. Pasamos al siguiente nivel!';
+      var t2 = el('toaster'); t2.innerHTML = '<div style="font-size:14px;font-weight:600;">'+msg+'</div>';
+      t2.className = 'toast show tok'; setTimeout(function(){t2.className='toast';t2.textContent='';},5000);
+      await FP('notificaciones',{tipo:'semana_completa',alumno:a.nombre,semana:semActual+1,fecha:new Date().toISOString(),leida:false});
+    }
   } else {
     await FU('alumnos/' + S.uid, { dia_actual: nextDia });
     S.alumnos[S.uid].dia_actual = nextDia;
     toast('Dia ' + (diaActual+1) + ' completado. Siguiente: Dia ' + (nextDia+1));
   }
+  S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
   S.avdia = S.alumnos[S.uid].dia_actual;
+  S.avsem = S.alumnos[S.uid].sem_actual || 0;
   renderAV();
+};
+window.profeSetDiaSem = async function() {
+  var aid = S.aid; if (!aid) return;
+  var dia = parseInt(el('set-dia-sel').value);
+  var sem = parseInt(el('set-sem-sel').value);
+  await FU('alumnos/' + aid, { dia_actual: dia, sem_actual: sem });
+  S.alumnos[aid].dia_actual = dia; S.alumnos[aid].sem_actual = sem;
+  closeM('m-set-diasem');
+  toast('Asignado: Dia ' + (dia+1) + ' Semana ' + (sem+1));
+  renderAll();
 };
 
 window.profeAvanzarDia = async function(aid) {
@@ -2538,6 +2667,15 @@ window.profeVolverDia = async function(aid) {
   S.alumnos[aid].dia_actual = prev;
   toast('Alumno devuelto al Dia ' + (prev + 1));
   renderAll();
+};
+
+window.avEnviarMsg = async function() {
+  var inp = el('chat-input-av');
+  if (!inp || !inp.value.trim()) return;
+  var texto = inp.value.trim(); inp.value = '';
+  await FP('alumnos/' + S.uid + '/mensajes', { texto:texto, fecha:new Date().toISOString(), de:'alumno', leido:false });
+  S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
+  avMsgs(S.alumnos[S.uid]);
 };
 
 window.avPropPeso = async function(ejId, si, nombre, pesoAct) {
@@ -2677,13 +2815,32 @@ function avCal(a) {
 
 function avMsgs(a) {
   var e = el('av-content');
-  var msgs = a.mensajes ? Object.values(a.mensajes).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}) : [];
-  e.innerHTML = '<div class="card"><div class="ch"><span class="ct">Mensajes de tu entrenador</span></div>' +
-    '<div>' + (msgs.length ? msgs.map(function(m) {
-      return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);"><div style="font-size:10px;color:var(--tx3);font-family:monospace;margin-bottom:5px;">' + new Date(m.fecha).toLocaleDateString('es-CL') + '</div>' +
-        '<div style="font-size:13px;line-height:1.6;">' + m.texto + '</div></div>';
-    }).join('') : '<div style="text-align:center;padding:36px;color:var(--tx3);">Sin mensajes</div>') + '</div></div>';
+  var msgs = a.mensajes ? Object.values(a.mensajes).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}) : [];
+  var chatHTML = msgs.map(function(m) {
+    var isProfe = m.de === 'profe' || !m.de;
+    var align = isProfe ? 'flex-start' : 'flex-end';
+    var bg = isProfe ? 'var(--bg3)' : 'var(--ac2)';
+    var clr = isProfe ? 'var(--tx)' : 'var(--ac)';
+    var brd = isProfe ? '1px solid var(--bd)' : '1px solid rgba(61,255,160,.2)';
+    var lbl = isProfe ? 'Entrenador' : 'Tu';
+    return '<div style="display:flex;justify-content:'+align+';margin-bottom:10px;">'+
+      '<div style="max-width:80%;background:'+bg+';border:'+brd+';border-radius:12px;padding:10px 14px;">'+
+      '<div style="font-size:9px;color:var(--tx3);font-family:monospace;margin-bottom:4px;">'+lbl+' - '+new Date(m.fecha).toLocaleDateString('es-CL')+'</div>'+
+      '<div style="font-size:13px;color:'+clr+';line-height:1.5;">'+m.texto+'</div>'+
+      '</div></div>';
+  }).join('');
+  e.innerHTML = '<div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 280px);">'+
+    '<div class="ch"><span class="ct">Mensajes</span></div>'+
+    '<div id="chat-msgs-av" style="flex:1;overflow-y:auto;padding:14px;">'+
+    (chatHTML || '<div style="color:var(--tx3);font-size:12px;text-align:center;padding:20px;">Sin mensajes aun</div>')+
+    '</div>'+
+    '<div style="padding:12px;border-top:1px solid var(--bd);display:flex;gap:8px;">'+
+    '<input class="fi" id="chat-input-av" placeholder="Escribe un mensaje..." style="flex:1;" onkeydown="if(event.key===\'Enter\')avEnviarMsg()">'+
+    '<button class="btn bp sm" onclick="avEnviarMsg()">Enviar</button>'+
+    '</div></div>';
+  setTimeout(function(){var c=document.getElementById('chat-msgs-av');if(c)c.scrollTop=c.scrollHeight;},50);
 }
+
 
 function avFicha2(a) {
   var e = el('av-content');
@@ -2697,6 +2854,60 @@ function avFicha2(a) {
 }
 
 
+
+function avEquipo(a) {
+  var e = el('av-content');
+  var profs = a.equipo ? Object.values(a.equipo) : [];
+  if (!profs.length) {
+    e.innerHTML = '<div class="card"><div class="ch"><span class="ct">Mi Equipo</span></div>'+
+      '<div style="padding:30px;text-align:center;color:var(--tx3);">Tu entrenador aun no ha agregado profesionales a tu equipo.</div></div>';
+    return;
+  }
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">';
+  profs.forEach(function(p) {
+    var ini = (p.nombre||'?')[0].toUpperCase();
+    html += '<div class="card" style="padding:16px;">'+
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'+
+      (p.foto ? '<img src="'+p.foto+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">' :
+       '<div style="width:48px;height:48px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:var(--ac);">'+ini+'</div>')+
+      '<div><div style="font-weight:600;font-size:14px;">'+(p.nombre||'')+'</div>'+
+      '<div style="font-size:11px;color:var(--tx2);">'+(p.especialidad||'')+'</div></div></div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;">';
+    if (p.wa) html += '<a href="https://wa.me/'+p.wa.replace(/[^0-9]/g,'')+'" target="_blank" class="btn bg sm" style="text-decoration:none;justify-content:center;">WhatsApp</a>';
+    if (p.email) html += '<a href="mailto:'+p.email+'" class="btn bg sm" style="text-decoration:none;justify-content:center;">Email</a>';
+    if (p.ig) html += '<a href="https://instagram.com/'+p.ig.replace('@','')+'" target="_blank" class="btn bg sm" style="text-decoration:none;justify-content:center;">Instagram</a>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Mi Equipo</span></div>'+html;
+}
+
+window.saveProf = async function() {
+  var nombre = el('prof-nombre') ? el('prof-nombre').value.trim() : '';
+  if (!nombre) { toast('Nombre obligatorio','err'); return; }
+  var prof = {
+    nombre: nombre,
+    especialidad: el('prof-esp') ? el('prof-esp').value.trim() : '',
+    wa: el('prof-wa') ? el('prof-wa').value.trim() : '',
+    email: el('prof-email') ? el('prof-email').value.trim() : '',
+    ig: el('prof-ig') ? el('prof-ig').value.trim() : '',
+    foto: el('prof-foto') ? el('prof-foto').value.trim() : ''
+  };
+  if (S.aid) {
+    await FP('alumnos/' + S.aid + '/equipo', prof);
+    S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  }
+  closeM('m-add-prof');
+  toast('Profesional agregado al equipo');
+  renderAll();
+};
+
+window.openAddProf = function() {
+  ['prof-nombre','prof-esp','prof-wa','prof-email','prof-ig','prof-foto'].forEach(function(id) {
+    if (el(id)) el(id).value = '';
+  });
+  el('m-add-prof').classList.remove('hidden');
+};
 </script>
 </body>
 </html>
