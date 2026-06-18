@@ -313,6 +313,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('pagos',this)"><div class="nd"></div>Pagos <span id="npagos" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
         <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
         <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
+        <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
         <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
         <button class="nb" onclick="setView('ficha',this)"><div class="nd"></div>Ficha</button>
       </div>
@@ -343,6 +344,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vvol"></div>
     <div class="content hidden" id="vbib"></div>
     <div class="content hidden" id="vplantillas"></div>
+    <div class="content hidden" id="vprofesionales"></div>
     <div class="content hidden" id="vficha"></div>
   </main>
 </div>
@@ -1224,7 +1226,7 @@ window.setView = function(v, btn) {
   S.view = v;
   document.querySelectorAll('#app .nb').forEach(function(b) { b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
-  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','ficha'].forEach(function(id) {
+  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1234,7 +1236,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1274,6 +1276,7 @@ function renderAll() {
   if (S.view === 'pagos') rPagos();
   if (S.view === 'vol')   rVol(a);
   if (S.view === 'bib')   rBib();
+  if (S.view === 'profesionales') rProfesionales();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
@@ -2177,6 +2180,23 @@ function rFicha(a) {
   e.innerHTML = '<div class="card" style="max-width:560px;">' +
     '<div class="ch"><span class="ct">Datos del alumno</span></div>' +
     '<div class="cb"><div class="g2">' + camposH + '</div></div></div>' +
+    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Lesiones del alumno</span></div>' +
+    '<div>' + (function() {
+      var les = a.lesiones ? Object.values(a.lesiones) : [];
+      if (!les.length) return '<div style="padding:14px;font-size:12px;color:var(--tx3);">Sin lesiones registradas.</div>';
+      return les.map(function(l) {
+        var isTmp = l.tipo === 'temporal';
+        var col = isTmp ? 'var(--am)' : 'var(--rd)';
+        return '<div style="padding:10px 14px;border-bottom:1px solid var(--bd);">'+
+          '<span style="font-size:10px;color:'+col+';font-family:monospace;margin-right:8px;">'+(isTmp?'TEMPORAL':'PERMANENTE')+'</span>'+
+          '<span style="font-size:13px;font-weight:500;">'+(l.desc||'')+'</span>'+
+          (l.obs?'<div style="font-size:11px;color:var(--tx2);margin-top:3px;">'+l.obs+'</div>':'')+
+          (l.url?'<div><a href="'+l.url+'" target="_blank" style="font-size:11px;color:var(--bl);">Ver examen</a></div>':'')+
+          '</div>';
+      }).join('');
+    })() +
+    '</div></div>' +
     '<div class="card" style="max-width:560px;">' +
     '<div class="ch"><span class="ct">Historial de planes</span></div>' +
     '<div>' + histH + '</div></div>' +
@@ -2275,8 +2295,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2301,7 +2321,8 @@ function renderAV() {
   if (S.avv === 'pesos')  avPesos(a);
   if (S.avv === 'cal')    avCal(a);
   if (S.avv === 'msgs')   avMsgs(a);
-  if (S.avv === 'equipo') avEquipo(a);
+  if (S.avv === 'equipo')   avEquipo(a);
+  if (S.avv === 'lesiones') avLesiones(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
@@ -2855,6 +2876,63 @@ function avFicha2(a) {
 
 
 
+function rProfesionales() {
+  var e = el('vprofesionales');
+  if (!e) return;
+  FG('profesionales').then(function(snap) {
+    var profs = snap ? Object.entries(snap) : [];
+    e.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">' +
+      '<button class="btn bp sm" onclick="openAddProf()">+ Agregar profesional</button>' +
+      '</div>' +
+      '<div class="card">' +
+      '<div class="ch"><span class="ct">Base de profesionales</span>' +
+      (S.aid && S.alumnos[S.aid] ? '<span style="font-size:11px;color:var(--tx2);">Asignando a: <b>' + S.alumnos[S.aid].nombre + '</b></span>' : '') +
+      '</div>' +
+      (profs.length ? '<div id="profs-list"></div>' : '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin profesionales. Agrega el primero.</div>') +
+      '</div>';
+    var list = document.getElementById('profs-list');
+    if (!list) return;
+    profs.forEach(function(kv) {
+      var id = kv[0], p = kv[1];
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);';
+      var ini = (p.nombre||'?')[0].toUpperCase();
+      row.innerHTML = '<div style="width:38px;height:38px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ac);flex-shrink:0;">'+ini+'</div>' +
+        '<div style="flex:1;"><div style="font-size:13px;font-weight:500;">'+(p.nombre||'')+'</div><div style="font-size:11px;color:var(--tx2);">'+(p.especialidad||'')+'</div></div>' +
+        '<div style="display:flex;gap:6px;" id="btns-'+id+'"></div>';
+      list.appendChild(row);
+      var btnDiv = document.getElementById('btns-'+id);
+      if (S.aid) {
+        var ba = document.createElement('button');
+        ba.className = 'btn bp sm'; ba.textContent = 'Asignar';
+        ba.onclick = (function(pid) { return function() { asignarProf(pid); }; })(id);
+        btnDiv.appendChild(ba);
+      }
+      var bd = document.createElement('button');
+      bd.className = 'btn brd sm'; bd.textContent = '✕';
+      bd.onclick = (function(pid) { return function() { eliminarProf(pid); }; })(id);
+      btnDiv.appendChild(bd);
+    });
+  });
+}
+
+
+window.asignarProf = async function(profId) {
+  if (!S.aid) { toast('Selecciona un alumno primero','err'); return; }
+  var snap = await FG('profesionales/' + profId);
+  if (!snap) return;
+  await FP('alumnos/' + S.aid + '/equipo', snap);
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  toast('Profesional asignado a ' + S.alumnos[S.aid].nombre);
+};
+
+window.eliminarProf = async function(profId) {
+  if (!confirm('Eliminar este profesional de la base de datos?')) return;
+  await FR('profesionales/' + profId);
+  toast('Profesional eliminado');
+  rProfesionales();
+};
+
 function avEquipo(a) {
   var e = el('av-content');
   var profs = a.equipo ? Object.values(a.equipo) : [];
@@ -2893,13 +2971,11 @@ window.saveProf = async function() {
     ig: el('prof-ig') ? el('prof-ig').value.trim() : '',
     foto: el('prof-foto') ? el('prof-foto').value.trim() : ''
   };
-  if (S.aid) {
-    await FP('alumnos/' + S.aid + '/equipo', prof);
-    S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
-  }
+  // Save to global database
+  await FP('profesionales', prof);
   closeM('m-add-prof');
-  toast('Profesional agregado al equipo');
-  renderAll();
+  toast('Profesional guardado en la base de datos');
+  rProfesionales();
 };
 
 window.openAddProf = function() {
@@ -2907,6 +2983,71 @@ window.openAddProf = function() {
     if (el(id)) el(id).value = '';
   });
   el('m-add-prof').classList.remove('hidden');
+};
+
+function avLesiones(a) {
+  var e = el('av-content');
+  var lesiones = a.lesiones ? Object.entries(a.lesiones) : [];
+
+  var html = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Mis Lesiones y Examenes</span></div>';
+
+  // Form to add new lesion
+  html += '<div class="card" style="margin-bottom:12px;padding:14px;">' +
+    '<div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--tx);">Agregar lesion o examen</div>' +
+    '<div class="g2" style="margin-bottom:8px;">' +
+    '<div class="fg"><label class="fl">Descripcion</label><input class="fi" id="les-desc" placeholder="Ej: Esguince tobillo, Discopatia L4-L5..."></div>' +
+    '<div class="fg"><label class="fl">Tipo</label><select class="fs" id="les-tipo">' +
+    '<option value="temporal">Temporal</option>' +
+    '<option value="permanente">Permanente</option>' +
+    '</select></div>' +
+    '<div class="fg" style="grid-column:1/-1;"><label class="fl">Observaciones (opcional)</label>' +
+    '<textarea class="fta" id="les-obs" placeholder="Fecha, medico, indicaciones..." style="min-height:40px;"></textarea></div>' +
+    '</div>' +
+    '<div class="fg" style="margin-bottom:8px;"><label class="fl">Adjuntar examen (URL imagen o PDF)</label>' +
+    '<input class="fi" id="les-url" placeholder="https://drive.google.com/... o link del examen"></div>' +
+    '<button class="btn bp sm" onclick="avGuardarLesion()">Guardar</button>' +
+    '</div>';
+
+  // List of lesiones
+  if (lesiones.length) {
+    html += '<div class="card"><div class="ch"><span class="ct">Historial</span></div><div>';
+    lesiones.forEach(function(kv) {
+      var id = kv[0], l = kv[1];
+      var isTmp = l.tipo === 'temporal';
+      var col = isTmp ? 'var(--am)' : 'var(--rd)';
+      var bg = isTmp ? 'rgba(255,184,48,.08)' : 'rgba(255,77,106,.08)';
+      var brd = isTmp ? 'rgba(255,184,48,.3)' : 'rgba(255,77,106,.3)';
+      html += '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">' +
+        '<span style="background:'+bg+';border:1px solid '+brd+';color:'+col+';border-radius:4px;padding:1px 8px;font-size:10px;font-family:monospace;">' + (isTmp ? 'TEMPORAL' : 'PERMANENTE') + '</span>' +
+        '<span style="font-size:13px;font-weight:500;">' + (l.desc||'') + '</span>' +
+        '</div>' +
+        (l.obs ? '<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">'+l.obs+'</div>' : '') +
+        (l.url ? '<a href="'+l.url+'" target="_blank" style="font-size:11px;color:var(--bl);">Ver examen adjunto</a>' : '') +
+        '<div style="font-size:10px;color:var(--tx3);margin-top:4px;">' + (l.fecha||'') + '</div>' +
+        '</div>';
+    });
+    html += '</div></div>';
+  } else {
+    html += '<div class="card"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin lesiones registradas.</div></div>';
+  }
+  e.innerHTML = html;
+}
+
+window.avGuardarLesion = async function() {
+  var desc = el('les-desc') ? el('les-desc').value.trim() : '';
+  if (!desc) { toast('Describe la lesion','err'); return; }
+  var lesion = {
+    desc: desc,
+    tipo: el('les-tipo') ? el('les-tipo').value : 'temporal',
+    obs: el('les-obs') ? el('les-obs').value.trim() : '',
+    url: el('les-url') ? el('les-url').value.trim() : '',
+    fecha: new Date().toLocaleDateString('es-CL')
+  };
+  await FP('alumnos/' + S.uid + '/lesiones', lesion);
+  S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
+  toast('Lesion guardada');
+  avLesiones(S.alumnos[S.uid]);
 };
 </script>
 </body>
