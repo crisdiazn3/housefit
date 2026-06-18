@@ -1241,7 +1241,8 @@ var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
   var a = A();
-  el('vsub').textContent = a ? a.nombre : 'Selecciona un alumno';
+  var vsubText = S.view === 'profesionales' ? 'Cristobal Diaz' : (a ? a.nombre : 'Selecciona un alumno');
+  el('vsub').textContent = vsubText;
   var act = el('vact'); act.innerHTML = '';
   function abtn(txt, cls, fn) {
     var b = document.createElement('button');
@@ -2879,12 +2880,17 @@ function avFicha2(a) {
 function rProfesionales() {
   var e = el('vprofesionales');
   if (!e) return;
+  // Show button immediately
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
+    '<span class="ct">Profesionales</span>' +
+    '<button class="btn bp sm" onclick="openAddProf()">+ Agregar profesional</button>' +
+    '</div>' +
+    '<div id="profs-container"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Cargando...</div></div>';
   FG('profesionales').then(function(snap) {
+    var container = document.getElementById('profs-container');
+    if (!container) return;
     var profs = snap ? Object.entries(snap) : [];
-    e.innerHTML = '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">' +
-      '<button class="btn bp sm" onclick="openAddProf()">+ Agregar profesional</button>' +
-      '</div>' +
-      '<div class="card">' +
+    container.innerHTML = '<div class="card">' +
       '<div class="ch"><span class="ct">Base de profesionales</span>' +
       (S.aid && S.alumnos[S.aid] ? '<span style="font-size:11px;color:var(--tx2);">Asignando a: <b>' + S.alumnos[S.aid].nombre + '</b></span>' : '') +
       '</div>' +
