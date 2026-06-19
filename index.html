@@ -1269,7 +1269,7 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos') { renderEmpty(); return; }
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas') { renderEmpty(); return; }
   if (S.view === 'dash')  rDash(a);
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'eval')  rEval(a);
