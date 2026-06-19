@@ -1202,7 +1202,7 @@ function renderSide() {
     else if (ps === 'pronto') dot = '<span style="width:7px;height:7px;border-radius:50%;background:var(--am);flex-shrink:0;margin-left:auto;"></span>';
     else if (ps === 'ok') dot = '<span style="width:7px;height:7px;border-radius:50%;background:var(--ac);flex-shrink:0;margin-left:auto;"></span>';
     var diaActualSide = a.dia_actual !== undefined ? parseInt(a.dia_actual) + 1 : 1;
-    var semActualSide = getSemanaActual(a);
+    var semActualSide = a.sem_actual !== undefined ? parseInt(a.sem_actual) : getSemanaActual(a);
     var semLabel = semActualSide !== null ? 'S' + (semActualSide + 1) : '';
     var diaLabel = semLabel ? 'D' + diaActualSide + ' ' + semLabel : 'D' + diaActualSide;
     var indicador = '<span style="font-size:9px;color:var(--ac);background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-left:4px;font-family:monospace;">' + diaLabel + '</span>';
@@ -2880,12 +2880,11 @@ function avFicha2(a) {
 function rProfesionales() {
   var e = el('vprofesionales');
   if (!e) return;
-  // Show button immediately
   e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
     '<span class="ct">Profesionales</span>' +
     '<button class="btn bp sm" onclick="openAddProf()">+ Agregar profesional</button>' +
     '</div>' +
-    '<div id="profs-container"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Cargando...</div></div>';
+    '<div id="profs-container"></div>';
   FG('profesionales').then(function(snap) {
     var container = document.getElementById('profs-container');
     if (!container) return;
@@ -2894,7 +2893,7 @@ function rProfesionales() {
       '<div class="ch"><span class="ct">Base de profesionales</span>' +
       (S.aid && S.alumnos[S.aid] ? '<span style="font-size:11px;color:var(--tx2);">Asignando a: <b>' + S.alumnos[S.aid].nombre + '</b></span>' : '') +
       '</div>' +
-      (profs.length ? '<div id="profs-list"></div>' : '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin profesionales. Agrega el primero.</div>') +
+      '<div id="profs-list">' + (profs.length ? '' : '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin profesionales. Agrega el primero con el boton verde.</div>') + '</div>' +
       '</div>';
     var list = document.getElementById('profs-list');
     if (!list) return;
