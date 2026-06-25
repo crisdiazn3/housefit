@@ -314,6 +314,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
         <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
         <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
+        <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
         <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
         <button class="nb" onclick="setView('ficha',this)"><div class="nd"></div>Ficha</button>
       </div>
@@ -345,6 +346,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vbib"></div>
     <div class="content hidden" id="vplantillas"></div>
     <div class="content hidden" id="vprofesionales"></div>
+    <div class="content hidden" id="vbeneficios"></div>
     <div class="content hidden" id="vficha"></div>
   </main>
 </div>
@@ -673,6 +675,33 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="mf">
       <button class="btn bg sm" onclick="closeM('m-set-diasem')">Cancelar</button>
       <button class="btn bp sm" onclick="profeSetDiaSem()">Asignar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-add-beneficio">
+  <div class="modal">
+    <div class="mt">Agregar beneficio</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Empresa/Marca</label><input class="fi" id="ben-empresa" placeholder="Ej: Sportika, Winkler..."></div>
+      <div class="fg"><label class="fl">Descripcion</label><input class="fi" id="ben-desc" placeholder="Ej: 15% descuento en suplementos"></div>
+      <div class="fg"><label class="fl">Codigo de descuento</label><input class="fi" id="ben-codigo" placeholder="Ej: HOUSEFIT15"></div>
+      <div class="fg"><label class="fl">Link (opcional)</label><input class="fi" id="ben-link" placeholder="https://..."></div>
+      <div class="fg"><label class="fl">Logo URL (opcional)</label><input class="fi" id="ben-logo" placeholder="https://..."></div>
+      <div class="fg"><label class="fl">Categoria</label>
+        <select class="fs" id="ben-cat">
+          <option value="suplementos">Suplementos</option>
+          <option value="ropa">Ropa deportiva</option>
+          <option value="nutricion">Nutricion</option>
+          <option value="equipamiento">Equipamiento</option>
+          <option value="salud">Salud y bienestar</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-beneficio')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveBeneficio()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1226,7 +1255,7 @@ window.setView = function(v, btn) {
   S.view = v;
   document.querySelectorAll('#app .nb').forEach(function(b) { b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
-  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','ficha'].forEach(function(id) {
+  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1236,7 +1265,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1269,7 +1298,7 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas') { renderEmpty(); return; }
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios') { renderEmpty(); return; }
   if (S.view === 'dash')  rDash(a);
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'eval')  rEval(a);
@@ -1278,6 +1307,7 @@ function renderAll() {
   if (S.view === 'vol')   rVol(a);
   if (S.view === 'bib')   rBib();
   if (S.view === 'profesionales') rProfesionales();
+  if (S.view === 'beneficios') rBeneficios();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
@@ -2182,6 +2212,24 @@ function rFicha(a) {
     '<div class="ch"><span class="ct">Datos del alumno</span></div>' +
     '<div class="cb"><div class="g2">' + camposH + '</div></div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Creditos y logros</span>' +
+    '<span style="font-size:13px;font-weight:600;color:var(--ac);">' + (a.creditos||0) + ' cred.</span></div>' +
+    '<div style="padding:10px 14px;">' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
+    (function(){
+      var logrosAct = a.logros || {};
+      return Object.keys(logrosAct).map(function(lid){
+        var ldef = LOGROS_DEF ? LOGROS_DEF.find(function(l){return l.id===lid;}) : null;
+        return ldef ? '<span style="font-size:14px;" title="'+ldef.titulo+'">'+ldef.emoji+'</span>' : '';
+      }).join('') || '<span style="font-size:12px;color:var(--tx3);">Sin logros aun</span>';
+    })() +
+    '</div>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<input class="fi" id="cred-monto" type="number" placeholder="Creditos" style="width:100px;">' +
+    '<input class="fi" id="cred-motivo" placeholder="Motivo" style="flex:1;">' +
+    '<button class="btn bp sm" onclick="darCreditos()">Dar</button>' +
+    '</div></div></div>' +
+    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Lesiones del alumno</span></div>' +
     '<div>' + (function() {
       var les = a.lesiones ? Object.values(a.lesiones) : [];
@@ -2296,8 +2344,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2323,7 +2371,8 @@ function renderAV() {
   if (S.avv === 'cal')    avCal(a);
   if (S.avv === 'msgs')   avMsgs(a);
   if (S.avv === 'equipo')   avEquipo(a);
-  if (S.avv === 'lesiones') avLesiones(a);
+  if (S.avv === 'lesiones')    avLesiones(a);
+  if (S.avv === 'beneficios')  avBeneficios(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
@@ -2341,9 +2390,9 @@ function avResumen(a) {
   // Banner hoy entrenas
   html += '<div style="background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:var(--r2);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
     '<div>' +
-    '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Hoy entrenas</div>' +
-    '<div style="font-size:22px;font-weight:700;color:var(--tx);">Dia ' + (diaHoy+1) + '</div>' +
-    '<div style="font-size:11px;color:var(--tx2);margin-top:2px;">' + ejsHoy + ' ejercicios - Semana ' + (si+1) + '</div>' +
+    '<div style="font-family:monospace;font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Hoy entrenas</div>' +
+    '<div style="font-size:24px;font-weight:700;color:var(--tx);margin-bottom:2px;">Dia ' + (diaHoy+1) + ' &nbsp;·&nbsp; Semana ' + (si+1) + '</div>' +
+    '<div style="font-size:11px;color:var(--tx2);">' + ejsHoy + ' ejercicios</div>' +
     '</div>' +
     '<button class="btn bp" onclick="avSet(\'pauta\')" style="padding:10px 18px;font-size:13px;">Empezar →</button>' +
     '</div>';
@@ -2517,7 +2566,13 @@ function avRenderDia(a) {
           '<td style="text-align:center;">' + (ej.link?'<a class="vb" href="'+ej.link+'" target="_blank">▶</a>':'—') + '</td>' +
           '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.series + (isD?'<span style="font-size:9px;color:var(--am);"> -40%</span>':'') + '</td>' +
           '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.reps + '</td>' +
-          '<td style="text-align:center;font-family:monospace;font-weight:500;color:var(--am);">' + (cs.peso===0?'Corporal':cs.peso+'kg') + (ej.descanso?'<div style="font-size:9px;color:var(--bl);">⏱ '+ej.descanso+'s</div>':'') + (si===0?'<div style="margin-top:5px;"><div style="font-size:8px;color:var(--tx3);margin-bottom:2px;">Editar peso S1:</div><input type="number" min="0" step="0.5" value="'+cs.peso+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--am);text-align:center;" onchange="avEditPeso(\''+ejId+'\',this.value)"><div style="font-size:8px;color:var(--tx3);margin-top:3px;margin-bottom:2px;">Intervalo kg:</div><input type="number" min="0" step="0.5" value="'+(ej.intervalo||2.5)+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--bl);text-align:center;" onchange="avEditIntervalo(\''+ejId+'\',this.value)"></div>':'') + '</td>' +
+          '<td style="text-align:center;font-family:monospace;font-weight:500;color:var(--am);">' + (cs.peso===0?'Corporal':cs.peso+'kg') + (function(){
+      var desc2 = ej.descanso || 60;
+      return '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">' +
+        '<div style="font-size:9px;color:var(--bl);">⏱ '+desc2+'s</div>' +
+        '<button onclick="startTimer('+desc2+')" style="font-size:9px;padding:1px 7px;background:var(--bl);color:#fff;border:none;border-radius:4px;cursor:pointer;">Iniciar</button>' +
+        '</div>';
+    })() + (si===0?'<div style="margin-top:5px;"><div style="font-size:8px;color:var(--tx3);margin-bottom:2px;">Editar peso S1:</div><input type="number" min="0" step="0.5" value="'+cs.peso+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--am);text-align:center;" onchange="avEditPeso(\''+ejId+'\',this.value)"><div style="font-size:8px;color:var(--tx3);margin-top:3px;margin-bottom:2px;">Intervalo kg:</div><input type="number" min="0" step="0.5" value="'+(ej.intervalo||2.5)+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--bl);text-align:center;" onchange="avEditIntervalo(\''+ejId+'\',this.value)"></div>':'') + '</td>' +
           percH +
           '</tr>';
         if (si > 0) {
@@ -2563,6 +2618,9 @@ function avRenderDia(a) {
     html += '<div style="margin-top:10px;"><div style="font-size:10px;color:var(--tx3);font-family:monospace;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Nota de sesion</div>' +
       '<textarea class="fta" style="min-height:44px;font-size:12px;" placeholder="Como te fue hoy?" onchange="avSaveObs(' + si + ',this.value)">' + obsAl + '</textarea></div>';
   }
+  // Logros section in resumen
+  html += avLogros(a);
+
   // Finalizar dia button
   html += '<div style="margin-top:14px;">' +
     '<button class="btn bp" style="width:100%;justify-content:center;padding:12px;font-size:14px;" onclick="finalizarDia()">✓ Finalizar Dia ' + (S.avdia+1) + ' — Avanzar al siguiente</button>' +
@@ -2616,6 +2674,29 @@ window.avPre = async function(k) {
 window.finalizarDia = async function() {
   var a = S.alumnos[S.uid];
   if (!a) return;
+
+  // Validar que todos los ejercicios tengan percepcion
+  var diaActual2 = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
+  var semActual2 = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
+  var diasPlan2 = a.dias_plan || {};
+  var diaData2 = diasPlan2[diaActual2];
+  if (diaData2 && diaData2.ejercicios) {
+    var sinPerc = [];
+    Object.values(diaData2.ejercicios).forEach(function(ej) {
+      var percKey = 'p' + (semActual2 + 1);
+      var tienePerc = ej.perc && ej.perc[semActual2] != null;
+      if (!tienePerc) sinPerc.push(ej.nombre);
+    });
+    if (sinPerc.length > 0) {
+      var t = el('toaster');
+      t.innerHTML = '<div style="font-size:13px;font-weight:600;margin-bottom:4px;">Falta percepcion de esfuerzo</div>' +
+        '<div style="font-size:11px;opacity:.9;">'+sinPerc.slice(0,3).join(', ')+(sinPerc.length>3?' y '+(sinPerc.length-3)+' mas..':'')+'</div>';
+      t.className = 'toast show terr';
+      setTimeout(function(){t.className='toast';t.textContent='';},5000);
+      return;
+    }
+  }
+
   var diasPlan = a.dias_plan || {};
   var diasKeys = Object.keys(diasPlan).map(Number).sort();
   var diaActual = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
@@ -2650,9 +2731,9 @@ window.finalizarDia = async function() {
   S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
   S.avdia = S.alumnos[S.uid].dia_actual;
   S.avsem = S.alumnos[S.uid].sem_actual || 0;
+  if (S.uid) await checkLogros(S.uid);
   renderAV();
-};
-window.profeSetDiaSem = async function() {
+};window.profeSetDiaSem = async function() {
   var aid = S.aid; if (!aid) return;
   var dia = parseInt(el('set-dia-sel').value);
   var sem = parseInt(el('set-sem-sel').value);
@@ -2998,7 +3079,7 @@ function avLesiones(a) {
 
   // Form to add new lesion
   html += '<div class="card" style="margin-bottom:12px;padding:14px;">' +
-    '<div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--tx);">Agregar lesion o examen</div>' +
+    '<div style="font-size:12px;font-weight:600;margin-bottom:10px;">Agregar lesion o examen</div>' +
     '<div class="g2" style="margin-bottom:8px;">' +
     '<div class="fg"><label class="fl">Descripcion</label><input class="fi" id="les-desc" placeholder="Ej: Esguince tobillo, Discopatia L4-L5..."></div>' +
     '<div class="fg"><label class="fl">Tipo</label><select class="fs" id="les-tipo">' +
@@ -3013,31 +3094,48 @@ function avLesiones(a) {
     '<button class="btn bp sm" onclick="avGuardarLesion()">Guardar</button>' +
     '</div>';
 
-  // List of lesiones
+  // List of lesiones with recommendations
   if (lesiones.length) {
-    html += '<div class="card"><div class="ch"><span class="ct">Historial</span></div><div>';
     lesiones.forEach(function(kv) {
       var id = kv[0], l = kv[1];
       var isTmp = l.tipo === 'temporal';
       var col = isTmp ? 'var(--am)' : 'var(--rd)';
       var bg = isTmp ? 'rgba(255,184,48,.08)' : 'rgba(255,77,106,.08)';
       var brd = isTmp ? 'rgba(255,184,48,.3)' : 'rgba(255,77,106,.3)';
-      html += '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">' +
-        '<span style="background:'+bg+';border:1px solid '+brd+';color:'+col+';border-radius:4px;padding:1px 8px;font-size:10px;font-family:monospace;">' + (isTmp ? 'TEMPORAL' : 'PERMANENTE') + '</span>' +
-        '<span style="font-size:13px;font-weight:500;">' + (l.desc||'') + '</span>' +
+      var rec = getLesionRec(l.desc);
+
+      html += '<div class="card" style="margin-bottom:10px;padding:14px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<span style="background:'+bg+';border:1px solid '+brd+';color:'+col+';border-radius:4px;padding:2px 8px;font-size:10px;font-family:monospace;">'+(isTmp?'TEMPORAL':'PERMANENTE')+'</span>' +
+        '<span style="font-size:14px;font-weight:600;">'+(l.desc||'')+'</span>' +
         '</div>' +
-        (l.obs ? '<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">'+l.obs+'</div>' : '') +
-        (l.url ? '<a href="'+l.url+'" target="_blank" style="font-size:11px;color:var(--bl);">Ver examen adjunto</a>' : '') +
-        '<div style="font-size:10px;color:var(--tx3);margin-top:4px;">' + (l.fecha||'') + '</div>' +
-        '</div>';
+        (l.obs ? '<div style="font-size:11px;color:var(--tx2);margin-bottom:6px;">'+l.obs+'</div>' : '') +
+        (l.url ? '<div style="margin-bottom:8px;"><a href="'+l.url+'" target="_blank" style="font-size:11px;color:var(--bl);">Ver examen adjunto</a></div>' : '') +
+        '<div style="font-size:10px;color:var(--tx3);">'+(l.fecha||'')+'</div>';
+
+      // Recommendations
+      if (rec) {
+        html += '<div style="margin-top:10px;background:var(--bg3);border-radius:8px;padding:10px;">' +
+          '<div style="font-size:10px;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Recomendaciones HouseFit</div>';
+        if (rec.evitar && rec.evitar.length) {
+          html += '<div style="font-size:11px;color:var(--rd);margin-bottom:4px;font-weight:600;">Evitar:</div>' +
+            '<div style="font-size:11px;color:var(--tx2);margin-bottom:6px;">'+rec.evitar.join(', ')+'</div>';
+        }
+        if (rec.modificar && rec.modificar.length) {
+          html += '<div style="font-size:11px;color:var(--am);margin-bottom:4px;font-weight:600;">Modificar:</div>' +
+            '<div style="font-size:11px;color:var(--tx2);margin-bottom:6px;">'+rec.modificar.join(' · ')+'</div>';
+        }
+        html += '<div style="font-size:11px;color:var(--tx2);">'+rec.rec+'</div>' +
+          '</div>';
+      }
+      html += '</div>';
     });
-    html += '</div></div>';
   } else {
     html += '<div class="card"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin lesiones registradas.</div></div>';
   }
   e.innerHTML = html;
 }
+
 
 window.avGuardarLesion = async function() {
   var desc = el('les-desc') ? el('les-desc').value.trim() : '';
@@ -3053,6 +3151,300 @@ window.avGuardarLesion = async function() {
   S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
   toast('Lesion guardada');
   avLesiones(S.alumnos[S.uid]);
+};
+
+// ── BENEFICIOS ────────────────────────────────────────────────────────────────
+function rBeneficios() {
+  var e = el('vbeneficios');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
+    '<span class="ct">Beneficios HouseFit</span>' +
+    '<button class="btn bp sm" onclick="el(\'m-add-beneficio\').classList.remove(\'hidden\')">+ Agregar beneficio</button>' +
+    '</div>' +
+    '<div id="beneficios-container"></div>';
+  FG('beneficios').then(function(snap) {
+    var container = document.getElementById('beneficios-container');
+    if (!container) return;
+    var items = snap ? Object.entries(snap) : [];
+    if (!items.length) {
+      container.innerHTML = '<div class="card"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin beneficios agregados aun. Toca "+ Agregar beneficio" para comenzar.</div></div>';
+      return;
+    }
+    var catColors = { suplementos:'var(--ac)', ropa:'var(--bl)', nutricion:'var(--am)', equipamiento:'var(--pu)', salud:'var(--bl)', otro:'var(--tx2)' };
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">';
+    items.forEach(function(kv) {
+      var id = kv[0], b = kv[1];
+      var col = catColors[b.categoria] || 'var(--tx2)';
+      html += '<div class="card" style="padding:14px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+        (b.logo ? '<img src="'+b.logo+'" style="width:40px;height:40px;border-radius:8px;object-fit:contain;border:1px solid var(--bd);">' :
+         '<div style="width:40px;height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:'+col+';">'+(b.empresa||'?')[0].toUpperCase()+'</div>') +
+        '<div>' +
+        '<div style="font-size:13px;font-weight:600;">'+b.empresa+'</div>' +
+        '<span style="font-size:9px;color:'+col+';background:var(--bg3);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;">'+((b.categoria||'otro').toUpperCase())+'</span>' +
+        '</div></div>' +
+        '<div style="font-size:12px;color:var(--tx2);margin-bottom:8px;">'+b.desc+'</div>' +
+        (b.codigo ? '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+          '<span style="font-size:10px;color:var(--tx3);">Codigo</span>' +
+          '<span style="font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--ac);">'+b.codigo+'</span>' +
+          '</div>' : '') +
+        '<div style="display:flex;gap:6px;">' +
+        (b.link ? '<a href="'+b.link+'" target="_blank" class="btn bg sm" style="text-decoration:none;flex:1;justify-content:center;">Visitar</a>' : '') +
+        '<button class="btn brd sm" onclick="eliminarBeneficio(\''+id+'\')">✕</button>' +
+        '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  });
+}
+
+function avBeneficios(a) {
+  var e = el('av-content');
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Beneficios HouseFit</span></div>' +
+    '<div id="av-beneficios-container"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Cargando...</div></div>';
+  FG('beneficios').then(function(snap) {
+    var container = document.getElementById('av-beneficios-container');
+    if (!container) return;
+    var items = snap ? Object.values(snap) : [];
+    if (!items.length) {
+      container.innerHTML = '<div class="card"><div style="padding:30px;text-align:center;color:var(--tx3);font-size:12px;">Tu entrenador aun no ha agregado beneficios.</div></div>';
+      return;
+    }
+    var catColors = { suplementos:'var(--ac)', ropa:'var(--bl)', nutricion:'var(--am)', equipamiento:'var(--pu)', salud:'var(--bl)', otro:'var(--tx2)' };
+    var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">';
+    items.forEach(function(b) {
+      var col = catColors[b.categoria] || 'var(--tx2)';
+      html += '<div class="card" style="padding:14px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+        (b.logo ? '<img src="'+b.logo+'" style="width:40px;height:40px;border-radius:8px;object-fit:contain;border:1px solid var(--bd);">' :
+         '<div style="width:40px;height:40px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:'+col+';">'+(b.empresa||'?')[0].toUpperCase()+'</div>') +
+        '<div>' +
+        '<div style="font-size:13px;font-weight:600;">'+b.empresa+'</div>' +
+        '<span style="font-size:9px;color:'+col+';background:var(--bg3);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;">'+((b.categoria||'otro').toUpperCase())+'</span>' +
+        '</div></div>' +
+        '<div style="font-size:12px;color:var(--tx2);margin-bottom:8px;">'+b.desc+'</div>' +
+        (b.codigo ? '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;text-align:center;margin-bottom:8px;">' +
+          '<div style="font-size:10px;color:var(--tx3);margin-bottom:2px;">Tu codigo de descuento</div>' +
+          '<div style="font-size:16px;font-weight:700;letter-spacing:.12em;color:var(--ac);">'+b.codigo+'</div>' +
+          '</div>' : '') +
+        (b.link ? '<a href="'+b.link+'" target="_blank" class="btn bp sm" style="text-decoration:none;width:100%;justify-content:center;">Ir a la tienda</a>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  });
+}
+
+window.saveBeneficio = async function() {
+  var empresa = el('ben-empresa') ? el('ben-empresa').value.trim() : '';
+  if (!empresa) { toast('Nombre de empresa obligatorio','err'); return; }
+  var ben = {
+    empresa: empresa,
+    desc: el('ben-desc') ? el('ben-desc').value.trim() : '',
+    codigo: el('ben-codigo') ? el('ben-codigo').value.trim().toUpperCase() : '',
+    link: el('ben-link') ? el('ben-link').value.trim() : '',
+    logo: el('ben-logo') ? el('ben-logo').value.trim() : '',
+    categoria: el('ben-cat') ? el('ben-cat').value : 'otro',
+    fecha: new Date().toISOString().slice(0,10)
+  };
+  await FP('beneficios', ben);
+  closeM('m-add-beneficio');
+  ['ben-empresa','ben-desc','ben-codigo','ben-link','ben-logo'].forEach(function(id){ if(el(id)) el(id).value=''; });
+  toast('Beneficio agregado');
+  rBeneficios();
+};
+
+window.eliminarBeneficio = async function(id) {
+  if (!confirm('Eliminar este beneficio?')) return;
+  await FR('beneficios/' + id);
+  toast('Beneficio eliminado');
+  rBeneficios();
+};
+
+// ── SISTEMA DE LOGROS Y CREDITOS ─────────────────────────────────────────────
+var LOGROS_DEF = [
+  { id:'primera_sesion', emoji:'🌱', titulo:'Rookie', desc:'Primera sesion completada', creditos:0, auto:true },
+  { id:'primer_peso', emoji:'📝', titulo:'Primer peso', desc:'Ingresaste tu primer peso e intervalo', creditos:0, auto:true },
+  { id:'primer_mensaje', emoji:'💬', titulo:'Primer contacto', desc:'Primer mensaje al entrenador', creditos:0, auto:true },
+  { id:'primer_subida_peso', emoji:'📈', titulo:'Primera mejora', desc:'Subiste peso en algun ejercicio', creditos:0, auto:true },
+  { id:'semana_2', emoji:'🔥', titulo:'Arrancando', desc:'2 semanas seguidas completas', creditos:0, auto:true },
+  { id:'semana_perfecta', emoji:'✅', titulo:'Semana perfecta', desc:'Primera semana sin fallar ningun dia', creditos:0, auto:true },
+  { id:'semana_4', emoji:'⚡', titulo:'Un mes sin excusas', desc:'4 semanas seguidas completas', creditos:10, auto:true },
+  { id:'ciclo_1', emoji:'🎯', titulo:'En construccion', desc:'Primer ciclo completo', creditos:50, auto:true },
+  { id:'mes_perfecto', emoji:'🛡️', titulo:'Mes impecable', desc:'Mes completo sin faltar', creditos:30, auto:true },
+  { id:'semana_8', emoji:'💎', titulo:'Consistencia de diamante', desc:'8 semanas seguidas completas', creditos:30, auto:true },
+  { id:'ciclo_3', emoji:'🚀', titulo:'Imparable', desc:'Tercer ciclo completo', creditos:100, auto:true },
+  { id:'semana_16', emoji:'👑', titulo:'Elite HouseFit', desc:'16 semanas seguidas completas', creditos:80, auto:true },
+  { id:'alumno_nuevo', emoji:'⭐', titulo:'Embajador', desc:'Trajo un alumno nuevo', creditos:100, auto:false },
+];
+
+var TITULOS = [
+  { min:0, titulo:'Rookie' },
+  { min:1, titulo:'En Construccion' },
+  { min:2, titulo:'Maquina' },
+  { min:4, titulo:'Indestructible' },
+  { min:7, titulo:'Bestia HouseFit' },
+  { min:10, titulo:'Embajador HouseFit' },
+];
+
+function getTitulo(numLogros) {
+  var t = TITULOS[0];
+  TITULOS.forEach(function(tt) { if (numLogros >= tt.min) t = tt; });
+  return t.titulo;
+}
+
+async function checkLogros(uid) {
+  var a = await FG('alumnos/' + uid);
+  if (!a) return;
+  var logrosAct = a.logros || {};
+  var sesiones = a.sesiones ? Object.values(a.sesiones) : [];
+  var histPlanes = a.historial_planes ? Object.values(a.historial_planes) : [];
+  var nuevos = [];
+
+  // Primera sesion
+  if (sesiones.length >= 1 && !logrosAct.primera_sesion) nuevos.push('primera_sesion');
+  // Primer peso (si tiene sem_actual > 0 y tiene dias_plan con pesos)
+  var tienePesos = a.dias_plan && Object.values(a.dias_plan).some(function(d) {
+    return d.ejercicios && Object.values(d.ejercicios).some(function(e) { return e.peso > 0; });
+  });
+  if (tienePesos && !logrosAct.primer_peso) nuevos.push('primer_peso');
+  // Primer mensaje
+  if (a.mensajes && Object.keys(a.mensajes).length > 0 && !logrosAct.primer_mensaje) nuevos.push('primer_mensaje');
+  // Semana perfecta (al menos una semana con todos los dias)
+  var diasPlan = a.dias_plan ? Object.keys(a.dias_plan).length : 0;
+  if (diasPlan > 0 && !logrosAct.semana_perfecta) {
+    var semanaOk = sesiones.length >= diasPlan;
+    if (semanaOk) nuevos.push('semana_perfecta');
+  }
+  // Rachas por semanas completas (sem_actual como proxy)
+  var semActual = a.sem_actual || 0;
+  if (semActual >= 2 && !logrosAct.semana_2) nuevos.push('semana_2');
+  if (semActual >= 4 && !logrosAct.semana_4) nuevos.push('semana_4');
+  if (semActual >= 8 && !logrosAct.semana_8) nuevos.push('semana_8');
+  if (semActual >= 16 && !logrosAct.semana_16) nuevos.push('semana_16');
+  // Ciclos
+  var numCiclos = histPlanes.length;
+  if (numCiclos >= 1 && !logrosAct.ciclo_1) nuevos.push('ciclo_1');
+  if (numCiclos >= 3 && !logrosAct.ciclo_3) nuevos.push('ciclo_3');
+
+  // Apply new logros
+  for (var i = 0; i < nuevos.length; i++) {
+    var lid = nuevos[i];
+    var ldef = LOGROS_DEF.find(function(l) { return l.id === lid; });
+    if (!ldef) continue;
+    var logro = { id: lid, fecha: new Date().toISOString().slice(0,10), creditos: ldef.creditos };
+    await FU('alumnos/' + uid + '/logros/' + lid, logro);
+    // Add credits
+    if (ldef.creditos > 0) {
+      var credAct = a.creditos || 0;
+      await FU('alumnos/' + uid, { creditos: credAct + ldef.creditos });
+      await FP('alumnos/' + uid + '/historial_creditos', {
+        motivo: ldef.titulo, creditos: ldef.creditos, fecha: new Date().toISOString().slice(0,10)
+      });
+    }
+    // Show notification
+    (function(l) {
+      setTimeout(function() {
+        var t = el('toaster');
+        t.innerHTML = '<div style="font-size:15px;margin-bottom:4px;">'+l.emoji+' Logro desbloqueado!</div>' +
+          '<div style="font-size:13px;font-weight:600;">'+l.titulo+'</div>' +
+          '<div style="font-size:11px;opacity:.85;">'+l.desc+(l.creditos?'  +'+l.creditos+' creditos':'')+'</div>';
+        t.className = 'toast show tok';
+        setTimeout(function() { t.className = 'toast'; t.textContent = ''; }, 5000);
+      }, 1000);
+    })(ldef);
+  }
+}
+
+// Alumno view: Mis logros (add to resumen or separate tab)
+function avLogros(a) {
+  var logrosAct = a.logros || {};
+  var numLogros = Object.keys(logrosAct).length;
+  var titulo = getTitulo(numLogros);
+  var creditos = a.creditos || 0;
+
+  var html = '<div style="text-align:center;padding:16px 0 12px;">' +
+    '<div style="font-size:28px;margin-bottom:4px;">'+
+    (numLogros >= 10 ? '👑' : numLogros >= 7 ? '💎' : numLogros >= 4 ? '🏅' : numLogros >= 2 ? '⚡' : '🌱') +
+    '</div>' +
+    '<div style="font-size:16px;font-weight:600;color:var(--ac);">'+titulo+'</div>' +
+    '<div style="font-size:12px;color:var(--tx2);margin-top:4px;">'+numLogros+' logros · '+creditos+' creditos</div>' +
+    '</div>';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">';
+  LOGROS_DEF.forEach(function(ldef) {
+    var desbloqueado = !!logrosAct[ldef.id];
+    html += '<div style="background:var(--bg3);border:1px solid '+(desbloqueado?'var(--ac)':'var(--bd)')+';border-radius:10px;padding:10px;text-align:center;opacity:'+(desbloqueado?'1':'0.4')+';transition:.2s;">' +
+      '<div style="font-size:22px;margin-bottom:4px;">'+ldef.emoji+'</div>' +
+      '<div style="font-size:11px;font-weight:600;color:'+(desbloqueado?'var(--tx)':'var(--tx3)')+';">'+ldef.titulo+'</div>' +
+      '<div style="font-size:9px;color:var(--tx3);margin-top:2px;">'+ldef.desc+'</div>' +
+      (ldef.creditos > 0 ? '<div style="font-size:10px;color:var(--ac);margin-top:3px;">+'+ldef.creditos+' cred.</div>' : '') +
+      (desbloqueado && logrosAct[ldef.id].fecha ? '<div style="font-size:8px;color:var(--tx3);margin-top:3px;">'+logrosAct[ldef.id].fecha+'</div>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// Check logros when finalizar dia
+var _origFinalizarDia = window.finalizarDia;
+window.finalizarDia = async function() {
+  await _origFinalizarDia();
+  if (S.uid) await checkLogros(S.uid);
+};
+
+var LESIONES_REC = {
+  'discopatia': { evitar:['Buenos dias con barra','Peso muerto convencional','Sentadilla profunda','Hiperextensiones'], modificar:['Sentadilla -> goblet squat o hack squat','Remo -> remo en maquina neutro'], rec:'Fortalecer core profundo. Evitar cargas axiales. Trabajar en rango libre de dolor.' },
+  'lumbalgia': { evitar:['Peso muerto','Buenos dias','Sit up','Hiperextensiones'], modificar:['Planchas en lugar de abdominales dinamicos'], rec:'Activar gluteo y core. Evitar flexion de tronco con carga. Controlar tecnica en todo momento.' },
+  'tendinopatia rotuliana': { evitar:['Sentadilla completa','Leg press profundo','Jumping lunges'], modificar:['Sentadilla -> a 60 grados max','Bajar peso en todos los ejercicios de cuadriceps'], rec:'Excentricos controlados. Fortalecer VMO. Evitar impacto.' },
+  'manguito rotador': { evitar:['Press militar con barra','Elevaciones laterales pesadas','Remo al menton','Pull over'], modificar:['Press -> angulo inclinado con mancuernas','Remo -> con agarre neutro'], rec:'Fortalecer rotadores externos. Evitar movimientos sobre la cabeza con carga.' },
+  'lca': { evitar:['Pivoteos','Sentadilla unilateral','Jumping','Leg extension completo'], modificar:['Trabajo de cadena cinetica cerrada','Sentadilla con control'], rec:'Fortalecer VMO y gluteo. Evitar valgo de rodilla. Trabajo excantrico controlado.' },
+  'esguince tobillo': { evitar:['Saltos','Ejercicios unipodales en inestabilidad','Sentadilla profunda'], modificar:['Reemplazar bipedestacion por maquinas'], rec:'Trabajo de propiocepcion progresivo. Fortalecer peroneos. Evitar impacto.' },
+  'epicondilitis': { evitar:['Curl de biceps con agarre supino pesado','Remo con barra','Press de banca agarre estrecho'], modificar:['Usar agarre neutro en todos los jalones y remos'], rec:'Fortalecer antebrazo con carga baja. Evitar movimientos de torsion del codo.' },
+  'hernia inguinal': { evitar:['Sentadilla con barra','Peso muerto','Prensa','Esfuerzos con valsalva'], modificar:['Trabajo de tren inferior sin carga axial'], rec:'Evitar maniobra de valsalva. Trabajo de core hipopresivo. Consultar medico antes de entrenar.' },
+};
+
+function getLesionRec(desc) {
+  var descLow = (desc||'').toLowerCase();
+  for (var key in LESIONES_REC) {
+    if (descLow.includes(key)) return LESIONES_REC[key];
+  }
+  return null;
+}
+
+window.darCreditos = async function() {
+  var monto = parseInt(el('cred-monto') ? el('cred-monto').value : 0);
+  var motivo = el('cred-motivo') ? el('cred-motivo').value.trim() : '';
+  if (!monto || monto <= 0) { toast('Ingresa un monto valido','err'); return; }
+  if (!S.aid) return;
+  var a = S.alumnos[S.aid];
+  var credAct = a.creditos || 0;
+  await FU('alumnos/' + S.aid, { creditos: credAct + monto });
+  await FP('alumnos/' + S.aid + '/historial_creditos', {
+    motivo: motivo || 'Creditos manuales', creditos: monto, fecha: new Date().toISOString().slice(0,10)
+  });
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  if (el('cred-monto')) el('cred-monto').value = '';
+  if (el('cred-motivo')) el('cred-motivo').value = '';
+  toast('+' + monto + ' creditos dados a ' + a.nombre);
+  renderAll();
+};
+
+window.darLogroManual = async function(aid, logroId) {
+  if (!aid) return;
+  var ldef = LOGROS_DEF.find(function(l) { return l.id === logroId; });
+  if (!ldef) return;
+  var a = await FG('alumnos/' + aid);
+  if (!a) return;
+  await FU('alumnos/' + aid + '/logros/' + logroId, { id: logroId, fecha: new Date().toISOString().slice(0,10), creditos: ldef.creditos });
+  if (ldef.creditos > 0) {
+    var credAct = a.creditos || 0;
+    await FU('alumnos/' + aid, { creditos: credAct + ldef.creditos });
+    await FP('alumnos/' + aid + '/historial_creditos', { motivo: ldef.titulo, creditos: ldef.creditos, fecha: new Date().toISOString().slice(0,10) });
+  }
+  S.alumnos[aid] = await FG('alumnos/' + aid);
+  toast(ldef.emoji + ' Logro asignado: ' + ldef.titulo);
+  renderAll();
 };
 </script>
 </body>
