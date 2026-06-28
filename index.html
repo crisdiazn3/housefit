@@ -315,6 +315,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
         <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
         <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
+        <button class="nb" onclick="setView('premios',this)"><div class="nd"></div>Premios</button>
+        <button class="nb" onclick="setView('ranking',this)"><div class="nd"></div>Ranking</button>
         <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
         <button class="nb" onclick="setView('ficha',this)"><div class="nd"></div>Ficha</button>
       </div>
@@ -347,6 +349,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vplantillas"></div>
     <div class="content hidden" id="vprofesionales"></div>
     <div class="content hidden" id="vbeneficios"></div>
+    <div class="content hidden" id="vpremios"></div>
+    <div class="content hidden" id="vranking"></div>
     <div class="content hidden" id="vficha"></div>
   </main>
 </div>
@@ -702,6 +706,39 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="mf">
       <button class="btn bg sm" onclick="closeM('m-add-beneficio')">Cancelar</button>
       <button class="btn bp sm" onclick="saveBeneficio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-add-premio">
+  <div class="modal">
+    <div class="mt">Agregar premio canjeable</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Nombre</label><input class="fi" id="prem-nombre" placeholder="Ej: Mes gratis, Evaluacion..."></div>
+      <div class="fg"><label class="fl">Creditos requeridos</label><input class="fi" id="prem-creditos" type="number" placeholder="400"></div>
+      <div class="fg" style="grid-column:1/-1;"><label class="fl">Descripcion</label><input class="fi" id="prem-desc" placeholder="Ej: Un mes de asesoria sin costo"></div>
+      <div class="fg"><label class="fl">Emoji</label><input class="fi" id="prem-emoji" placeholder="🎁"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-premio')">Cancelar</button>
+      <button class="btn bp sm" onclick="savePremio()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-add-desafio">
+  <div class="modal">
+    <div class="mt">Crear desafio</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Nombre</label><input class="fi" id="des-nombre" placeholder="Ej: Sube un video entrenando"></div>
+      <div class="fg"><label class="fl">Creditos que otorga</label><input class="fi" id="des-creditos" type="number" placeholder="10"></div>
+      <div class="fg" style="grid-column:1/-1;"><label class="fl">Descripcion</label><textarea class="fta" id="des-desc" placeholder="Describe el desafio con detalle..." style="min-height:60px;"></textarea></div>
+      <div class="fg"><label class="fl">Fecha limite (opcional)</label><input class="fi" id="des-fecha" type="date"></div>
+      <div class="fg"><label class="fl">Emoji</label><input class="fi" id="des-emoji" placeholder="🏆"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-desafio')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveDesafio()">Crear desafio</button>
     </div>
   </div>
 </div>
@@ -1255,7 +1292,7 @@ window.setView = function(v, btn) {
   S.view = v;
   document.querySelectorAll('#app .nb').forEach(function(b) { b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
-  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','ficha'].forEach(function(id) {
+  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1265,7 +1302,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1298,7 +1335,7 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios') { renderEmpty(); return; }
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking') { renderEmpty(); return; }
   if (S.view === 'dash')  rDash(a);
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'eval')  rEval(a);
@@ -1308,6 +1345,8 @@ function renderAll() {
   if (S.view === 'bib')   rBib();
   if (S.view === 'profesionales') rProfesionales();
   if (S.view === 'beneficios') rBeneficios();
+  if (S.view === 'premios') rPremios();
+  if (S.view === 'ranking') rRanking();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
@@ -2212,6 +2251,14 @@ function rFicha(a) {
     '<div class="ch"><span class="ct">Datos del alumno</span></div>' +
     '<div class="cb"><div class="g2">' + camposH + '</div></div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Configuracion</span></div>' +
+    '<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">' +
+    '<div><div style="font-size:13px;font-weight:500;">Participa en el ranking</div>' +
+    '<div style="font-size:11px;color:var(--tx2);">Aparece en la tabla de ranking mensual</div></div>' +
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+    '<input type="checkbox" id="toggle-ranking" ' + (a.en_ranking?'checked':'') + ' onchange="toggleRanking(this.checked)" style="width:18px;height:18px;cursor:pointer;">' +
+    '</label></div></div>' +
+    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Creditos y logros</span>' +
     '<span style="font-size:13px;font-weight:600;color:var(--ac);">' + (a.creditos||0) + ' cred.</span></div>' +
     '<div style="padding:10px 14px;">' +
@@ -2344,8 +2391,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2373,6 +2420,7 @@ function renderAV() {
   if (S.avv === 'equipo')   avEquipo(a);
   if (S.avv === 'lesiones')    avLesiones(a);
   if (S.avv === 'beneficios')  avBeneficios(a);
+  if (S.avv === 'creditos')   avCreditos(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
@@ -2621,6 +2669,22 @@ function avRenderDia(a) {
   // Logros section in resumen
   html += avLogros(a);
 
+  // Proyeccion de meta
+  var proyecciones = calcProyeccion(a);
+  if (proyecciones.length > 0) {
+    html += '<div class="card" style="margin-top:14px;margin-bottom:14px;"><div class="ch"><span class="ct">Proyeccion a 3 meses</span></div><div>';
+    proyecciones.slice(0,3).forEach(function(p) {
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="flex:1;font-size:12px;">' + p.nombre + '</div>' +
+        '<div style="font-size:11px;color:var(--tx2);">' + p.pesoActual + 'kg</div>' +
+        '<div style="font-size:11px;color:var(--tx3);">→</div>' +
+        '<div style="font-size:13px;font-weight:600;color:var(--ac);">' + p.pesoFuturo + 'kg</div>' +
+        '<div style="font-size:10px;color:var(--ac);">+' + p.ganancia + 'kg</div>' +
+        '</div>';
+    });
+    html += '</div></div>';
+  }
+
   // Finalizar dia button
   html += '<div style="margin-top:14px;">' +
     '<button class="btn bp" style="width:100%;justify-content:center;padding:12px;font-size:14px;" onclick="finalizarDia()">✓ Finalizar Dia ' + (S.avdia+1) + ' — Avanzar al siguiente</button>' +
@@ -2731,7 +2795,11 @@ window.finalizarDia = async function() {
   S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
   S.avdia = S.alumnos[S.uid].dia_actual;
   S.avsem = S.alumnos[S.uid].sem_actual || 0;
-  if (S.uid) await checkLogros(S.uid);
+  if (S.uid) {
+    await checkLogros(S.uid);
+    await checkHitosMeses(S.uid);
+    await actualizarRacha(S.uid);
+  }
   renderAV();
 };window.profeSetDiaSem = async function() {
   var aid = S.aid; if (!aid) return;
@@ -2796,6 +2864,25 @@ window.avSaveObs = async function(si, txt) {
 };
 
 function avEval(a) {
+  var evals = a.evaluaciones ? Object.values(a.evaluaciones) : [];
+  if (!isAlumnoActivo(a) && evals.length > 1) {
+    // Show only latest eval, block the rest
+    var lastEval = evals.sort(function(a,b){return b.fecha.localeCompare(a.fecha);})[0];
+    var e = el('av-content');
+    e.innerHTML = '<div class="card" style="text-align:center;padding:20px;margin-bottom:12px;">' +
+      '<div style="font-size:24px;margin-bottom:8px;">🔒</div>' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:4px;">Historial bloqueado</div>' +
+      '<div style="font-size:11px;color:var(--tx2);">Solo puedes ver tu ultima evaluacion. Retoma tu asesoria para acceder al historial completo.</div>' +
+      '</div>' +
+      '<div class="card" style="padding:14px;">' +
+      '<div class="ch"><span class="ct">Ultima evaluacion — ' + (lastEval.fecha||'') + '</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;">' +
+      (lastEval.peso?'<div><div style="font-size:10px;color:var(--tx3);">Peso</div><div style="font-size:16px;font-weight:600;">'+lastEval.peso+' kg</div></div>':'') +
+      (lastEval.grasa?'<div><div style="font-size:10px;color:var(--tx3);">Grasa</div><div style="font-size:16px;font-weight:600;">'+lastEval.grasa+'%</div></div>':'') +
+      '</div></div>';
+    return;
+  }
+
   var e = el('av-content');
   var evs = a.evaluaciones ? Object.values(a.evaluaciones).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}) : [];
   if (!evs.length) {
@@ -2847,6 +2934,15 @@ window.subirFoto = async function(input) {
 };
 
 function avPesos(a) {
+  if (!isAlumnoActivo(a)) {
+    el('av-content').innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
+      '<div style="font-size:30px;margin-bottom:10px;">🔒</div>' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">Contenido bloqueado</div>' +
+      '<div style="font-size:12px;color:var(--tx2);">El historial de pesos esta disponible solo para alumnos con asesoria activa. Retoma tu plan para volver a acceder.</div>' +
+      '</div>';
+    return;
+  }
+
   var e = el('av-content');
   var dias2 = a.dias_plan || {};
   var ejList2 = [];
@@ -3159,9 +3255,14 @@ function rBeneficios() {
   if (!e) return;
   e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
     '<span class="ct">Beneficios HouseFit</span>' +
-    '<button class="btn bp sm" onclick="el(\'m-add-beneficio\').classList.remove(\'hidden\')">+ Agregar beneficio</button>' +
+    '<button class="btn bp sm" id="btn-add-beneficio">+ Agregar beneficio</button>' +
     '</div>' +
     '<div id="beneficios-container"></div>';
+  var _bb = document.getElementById('btn-add-beneficio');
+  if (_bb) _bb.onclick = function() {
+    var m = document.getElementById('m-add-beneficio');
+    if (m) m.classList.remove('hidden');
+  };
   FG('beneficios').then(function(snap) {
     var container = document.getElementById('beneficios-container');
     if (!container) return;
@@ -3199,6 +3300,16 @@ function rBeneficios() {
 }
 
 function avBeneficios(a) {
+  var e = el('av-content');
+  if (!isAlumnoActivo(a)) {
+    e.innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
+      '<div style="font-size:30px;margin-bottom:10px;">🔒</div>' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">Beneficios exclusivos</div>' +
+      '<div style="font-size:12px;color:var(--tx2);">Los convenios y descuentos de HouseFit estan disponibles solo para alumnos con asesoria activa. Retoma tu plan para acceder.</div>' +
+      '</div>';
+    return;
+  }
+
   var e = el('av-content');
   e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Beneficios HouseFit</span></div>' +
     '<div id="av-beneficios-container"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Cargando...</div></div>';
@@ -3446,6 +3557,487 @@ window.darLogroManual = async function(aid, logroId) {
   toast(ldef.emoji + ' Logro asignado: ' + ldef.titulo);
   renderAll();
 };
+
+// ── VISTA CREDITOS ALUMNO ────────────────────────────────────────────────────
+function avCreditos(a) {
+  var e = el('av-content');
+  var creditos = a.creditos || 0;
+  var logros = a.logros || {};
+  var numLogros = Object.keys(logros).length;
+  var titulo = getTitulo(numLogros);
+  var histCred = a.historial_creditos ? Object.values(a.historial_creditos).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}) : [];
+
+  // Premios canjeables por defecto
+  var premios = [
+    { id:'mes_gratis', emoji:'🎁', nombre:'Mes gratis', desc:'Un mes de asesoria sin costo', creditos:400 },
+    { id:'evaluacion', emoji:'📋', nombre:'Evaluacion', desc:'Evaluacion de composicion corporal', creditos:100 },
+    { id:'proteina', emoji:'💪', nombre:'Proteina 2 lbs', desc:'Proteina whey de tu eleccion', creditos:200 },
+    { id:'creatina', emoji:'⚡', nombre:'Creatina', desc:'Creatina monohidrato', creditos:200 },
+  ];
+
+  var html = '';
+
+  // Header saldo
+  html += '<div style="text-align:center;padding:20px 0 14px;background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:var(--r2);margin-bottom:14px;">' +
+    '<div style="font-size:11px;color:var(--ac);font-family:monospace;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Mis creditos</div>' +
+    '<div style="font-size:44px;font-weight:700;color:var(--tx);line-height:1;">' + creditos + '</div>' +
+    '<div style="font-size:12px;color:var(--tx2);margin-top:6px;">' + titulo + ' · ' + numLogros + ' logros</div>' +
+    '</div>';
+
+  // Premios canjeables
+  html += '<div class="card" style="margin-bottom:14px;">' +
+    '<div class="ch"><span class="ct">Que puedo canjear</span></div>' +
+    '<div>';
+  premios.forEach(function(p) {
+    var puedeCanjear = creditos >= p.creditos;
+    var faltan = p.creditos - creditos;
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--bd);">' +
+      '<div style="font-size:26px;">' + p.emoji + '</div>' +
+      '<div style="flex:1;">' +
+      '<div style="font-size:13px;font-weight:500;">' + p.nombre + '</div>' +
+      '<div style="font-size:11px;color:var(--tx2);">' + p.desc + '</div>' +
+      '<div style="font-size:10px;color:' + (puedeCanjear?'var(--ac)':'var(--tx3)') + ';margin-top:2px;font-family:monospace;">' + p.creditos + ' creditos</div>' +
+      '</div>' +
+      (puedeCanjear ?
+        '<button class="btn bp sm" id="canje-btn-' + p.id + '">Canjear</button>' :
+        '<span style="font-size:10px;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;">Faltan ' + faltan + '</span>'
+      ) +
+      '</div>';
+  });
+  html += '</div></div>';
+
+  // Como ganar mas
+  html += '<div class="card" style="margin-bottom:14px;">' +
+    '<div class="ch"><span class="ct">Como ganar creditos</span></div>' +
+    '<div>';
+  LOGROS_DEF.filter(function(l){return l.creditos>0;}).forEach(function(l){
+    var desbloqueado = !!logros[l.id];
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd);opacity:'+(desbloqueado?'0.5':'1')+'">' +
+      '<span style="font-size:18px;">' + l.emoji + '</span>' +
+      '<div style="flex:1;"><div style="font-size:12px;font-weight:500;">' + l.titulo + '</div>' +
+      '<div style="font-size:11px;color:var(--tx2);">' + l.desc + '</div></div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--ac);font-family:monospace;">+' + l.creditos + '</div>' +
+      (desbloqueado ? '<span style="font-size:10px;color:var(--ac);">✓</span>' : '') +
+      '</div>';
+  });
+  html += '</div></div>';
+
+  // Desafios activos
+  FG('desafios').then(function(snap) {
+    var desafios = snap ? Object.values(snap) : [];
+    if (!desafios.length) return;
+    var desHtml = '<div class="card" style="margin-top:14px;">' +
+      '<div class="ch"><span class="ct">Desafios activos</span></div><div>';
+    desafios.forEach(function(d) {
+      desHtml += '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
+        '<span style="font-size:20px;">' + (d.emoji||'🏆') + '</span>' +
+        '<div style="flex:1;"><div style="font-size:13px;font-weight:500;">' + d.nombre + '</div>' +
+        (d.fecha?'<div style="font-size:10px;color:var(--tx3);">Vence: '+d.fecha+'</div>':'') +
+        '</div>' +
+        '<span style="font-size:13px;font-weight:600;color:var(--ac);">+' + d.creditos + '</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--tx2);">' + (d.desc||'') + '</div>' +
+        '</div>';
+    });
+    desHtml += '</div></div>';
+    var cont = el('av-content');
+    if (cont) cont.innerHTML += desHtml;
+  });
+
+  // Historial
+  if (histCred.length) {
+    html += '<div class="card">' +
+      '<div class="ch"><span class="ct">Historial</span></div><div>';
+    histCred.slice(0,10).forEach(function(h) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div><div style="font-size:12px;">' + (h.motivo||'Creditos') + '</div>' +
+        '<div style="font-size:10px;color:var(--tx3);">' + (h.fecha||'') + '</div></div>' +
+        '<span style="font-size:13px;font-weight:600;color:' + (h.creditos<0?'var(--rd)':'var(--ac)') + ';">' + (h.creditos>0?'+':'') + h.creditos + '</span>' +
+        '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  e.innerHTML = html;
+}
+
+window.solicitarCanje = async function(premioId, nombre, costo) {
+  var a = S.alumnos[S.uid];
+  if (!a) return;
+  if ((a.creditos||0) < costo) { toast('No tienes suficientes creditos','err'); return; }
+  if (!confirm('Canjear ' + nombre + ' por ' + costo + ' creditos?')) return;
+  var nuevoCred = (a.creditos||0) - costo;
+  await FU('alumnos/' + S.uid, { creditos: nuevoCred });
+  await FP('alumnos/' + S.uid + '/historial_creditos', {
+    motivo: 'Canje: ' + nombre, creditos: -costo, fecha: new Date().toISOString().slice(0,10)
+  });
+  await FP('notificaciones', { tipo:'canje', alumno:a.nombre, premio:nombre, fecha:new Date().toISOString(), leida:false });
+  S.alumnos[S.uid] = await FG('alumnos/' + S.uid);
+  toast('Canje solicitado! Tu entrenador lo gestionara.');
+  avCreditos(S.alumnos[S.uid]);
+};
+
+// ── PANEL PREMIOS Y DESAFIOS (PROFE) ────────────────────────────────────────
+function rPremios() {
+  var e = el('vpremios');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
+    '<span class="ct">Premios y Desafios</span>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button class="btn bg sm" onclick="el(\'m-add-premio\').classList.remove(\'hidden\')">+ Premio</button>' +
+    '<button class="btn bp sm" onclick="el(\'m-add-desafio\').classList.remove(\'hidden\')">+ Desafio</button>' +
+    '</div></div>' +
+    '<div id="premios-container"></div>';
+
+  // Load premios and desafios from Firebase
+  Promise.all([FG('premios_config'), FG('desafios')]).then(function(results) {
+    var container = document.getElementById('premios-container');
+    if (!container) return;
+    var premios = results[0] ? Object.entries(results[0]) : [];
+    var desafios = results[1] ? Object.entries(results[1]) : [];
+
+    var html = '';
+
+    // Premios section
+    html += '<div class="card" style="margin-bottom:14px;">' +
+      '<div class="ch"><span class="ct">Premios canjeables</span>' +
+      '<span style="font-size:11px;color:var(--tx3);">Los alumnos los canjean con sus creditos</span></div>' +
+      '<div>';
+    if (!premios.length) {
+      html += '<div style="padding:16px;font-size:12px;color:var(--tx3);">Sin premios configurados. Los predeterminados son: Mes gratis (400), Evaluacion (100), Proteina (200), Creatina (200).</div>';
+    } else {
+      premios.forEach(function(kv) {
+        var id = kv[0], p = kv[1];
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+          '<span style="font-size:22px;">' + (p.emoji||'🎁') + '</span>' +
+          '<div style="flex:1;"><div style="font-size:13px;font-weight:500;">' + p.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--tx2);">' + (p.desc||'') + '</div></div>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--ac);font-family:monospace;">' + p.creditos + ' cred.</span>' +
+          '<button class="btn brd sm" id="del-prem-' + id + '">✕</button>' +
+          '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    // Desafios section
+    html += '<div class="card">' +
+      '<div class="ch"><span class="ct">Desafios activos</span>' +
+      '<span style="font-size:11px;color:var(--tx3);">Los alumnos los completan y tu asignas los creditos</span></div>' +
+      '<div>';
+    if (!desafios.length) {
+      html += '<div style="padding:16px;font-size:12px;color:var(--tx3);">Sin desafios creados aun. Toca "+ Desafio" para crear el primero.</div>';
+    } else {
+      desafios.forEach(function(kv) {
+        var id = kv[0], d = kv[1];
+        html += '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">' +
+          '<span style="font-size:20px;">' + (d.emoji||'🏆') + '</span>' +
+          '<div style="flex:1;"><div style="font-size:13px;font-weight:500;">' + d.nombre + '</div>' +
+          (d.fecha ? '<div style="font-size:10px;color:var(--tx3);">Vence: ' + d.fecha + '</div>' : '') +
+          '</div>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--ac);font-family:monospace;">+' + d.creditos + '</span>' +
+          '<button class="btn brd sm" id="del-des-' + id + '">✕</button>' +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--tx2);">' + (d.desc||'') + '</div>' +
+          '</div>';
+      });
+    }
+    html += '</div></div>';
+
+    container.innerHTML = html;
+
+    // Bind delete buttons
+    premios.forEach(function(kv) {
+      var id = kv[0], p = kv[1];
+      var btn = document.getElementById('del-prem-' + id);
+      if (btn) btn.onclick = (function(pid){ return function(){ eliminarPremio(pid); }; })(id);
+    });
+    desafios.forEach(function(kv) {
+      var id = kv[0], d = kv[1];
+      var btn = document.getElementById('del-des-' + id);
+      if (btn) btn.onclick = (function(did){ return function(){ eliminarDesafio(did); }; })(id);
+    });
+  });
+}
+
+window.savePremio = async function() {
+  var nombre = el('prem-nombre') ? el('prem-nombre').value.trim() : '';
+  if (!nombre) { toast('Nombre obligatorio','err'); return; }
+  var cred = parseInt(el('prem-creditos') ? el('prem-creditos').value : 0);
+  if (!cred || cred <= 0) { toast('Creditos invalidos','err'); return; }
+  await FP('premios_config', {
+    nombre: nombre,
+    creditos: cred,
+    desc: el('prem-desc') ? el('prem-desc').value.trim() : '',
+    emoji: el('prem-emoji') ? el('prem-emoji').value.trim() || '🎁' : '🎁'
+  });
+  closeM('m-add-premio');
+  toast('Premio agregado');
+  rPremios();
+};
+
+window.saveDesafio = async function() {
+  var nombre = el('des-nombre') ? el('des-nombre').value.trim() : '';
+  if (!nombre) { toast('Nombre obligatorio','err'); return; }
+  var cred = parseInt(el('des-creditos') ? el('des-creditos').value : 0);
+  if (!cred || cred <= 0) { toast('Creditos invalidos','err'); return; }
+  await FP('desafios', {
+    nombre: nombre,
+    creditos: cred,
+    desc: el('des-desc') ? el('des-desc').value.trim() : '',
+    emoji: el('des-emoji') ? el('des-emoji').value.trim() || '🏆' : '🏆',
+    fecha: el('des-fecha') ? el('des-fecha').value : '',
+    activo: true
+  });
+  closeM('m-add-desafio');
+  toast('Desafio creado');
+  rPremios();
+};
+
+window.eliminarPremio = async function(id) {
+  if (!confirm('Eliminar este premio?')) return;
+  await FR('premios_config/' + id);
+  toast('Premio eliminado');
+  rPremios();
+};
+
+window.eliminarDesafio = async function(id) {
+  if (!confirm('Eliminar este desafio?')) return;
+  await FR('desafios/' + id);
+  toast('Desafio eliminado');
+  rPremios();
+};
+
+// ── RACHA Y ESTADO ACTIVO ────────────────────────────────────────────────────
+async function actualizarRacha(uid) {
+  var a = await FG('alumnos/' + uid);
+  if (!a) return;
+  var sesiones = a.sesiones ? Object.values(a.sesiones) : [];
+  if (!sesiones.length) return;
+  
+  // Sort sessions by date
+  sesiones.sort(function(a,b){ return b.fecha.localeCompare(a.fecha); });
+  var hoy = new Date().toISOString().slice(0,10);
+  var ultima = sesiones[0].fecha;
+  
+  // Check if last session was more than 10 days ago (considering rest days between sessions)
+  var diasDesdeUltima = Math.floor((new Date(hoy) - new Date(ultima)) / 86400000);
+  
+  if (diasDesdeUltima > 10) {
+    // Reset racha and title
+    var logros = a.logros || {};
+    var logrosBorrar = ['semana_2','semana_4','semana_8','semana_16'];
+    var updates = {};
+    logrosBorrar.forEach(function(lid) { delete logros[lid]; });
+    await FU('alumnos/' + uid, { logros: logros });
+    // Notify
+    await FP('notificaciones', {
+      tipo: 'racha_perdida', alumno: a.nombre,
+      msg: 'Lleva ' + diasDesdeUltima + ' dias sin entrenar. Racha reiniciada.',
+      fecha: new Date().toISOString(), leida: false
+    });
+  }
+}
+
+// ── ESTADO ACTIVO ALUMNO ──────────────────────────────────────────────────────
+function isAlumnoActivo(a) {
+  if (!a || !a.sesiones) return false;
+  var sesiones = Object.values(a.sesiones);
+  if (!sesiones.length) return false;
+  var hoy = new Date();
+  var limite = new Date(hoy.getTime() - 14 * 86400000);
+  return sesiones.some(function(s) {
+    return s.fecha && new Date(s.fecha) >= limite;
+  });
+}
+
+// ── RANKING ──────────────────────────────────────────────────────────────────
+function rRanking() {
+  var e = el('vranking');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Ranking mensual</span></div>' +
+    '<div id="ranking-container"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando...</div></div>';
+
+  // Build ranking from alumnos data
+  var alumnos = Object.entries(S.alumnos).filter(function(kv){ return kv[1].en_ranking; });
+  if (!alumnos.length) {
+    document.getElementById('ranking-container').innerHTML =
+      '<div class="card"><div style="padding:20px;font-size:12px;color:var(--tx3);">Sin alumnos en el ranking. Activa la participacion desde la Ficha de cada alumno.</div></div>';
+    return;
+  }
+
+  // Get current month sessions
+  var mesActual = new Date().toISOString().slice(0,7); // YYYY-MM
+  var ranking = alumnos.map(function(kv) {
+    var id = kv[0], a = kv[1];
+    var sesiones = a.sesiones ? Object.values(a.sesiones) : [];
+    var sesionesMes = sesiones.filter(function(s){ return s.fecha && s.fecha.startsWith(mesActual); }).length;
+    var creditos = a.creditos || 0;
+    var semActual = a.sem_actual || 0;
+    return { id:id, nombre:a.nombre, sesiones:sesionesMes, creditos:creditos, semanas:semActual };
+  }).sort(function(a,b){ return b.sesiones - a.sesiones || b.creditos - a.creditos; });
+
+  var medals = ['🥇','🥈','🥉'];
+  var html = '<div class="card" style="margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Sesiones este mes</span></div><div>';
+  ranking.forEach(function(r, i) {
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+      '<span style="font-size:20px;width:28px;text-align:center;">' + (medals[i]||('#'+(i+1))) + '</span>' +
+      '<div style="flex:1;"><div style="font-size:13px;font-weight:500;">' + r.nombre + '</div>' +
+      '<div style="font-size:10px;color:var(--tx3);">S' + (r.semanas+1) + ' · ' + r.creditos + ' cred.</div></div>' +
+      '<span style="font-size:16px;font-weight:700;color:var(--ac);">' + r.sesiones + '</span>' +
+      '<span style="font-size:10px;color:var(--tx3);">sesiones</span>' +
+      '</div>';
+  });
+  html += '</div></div>';
+
+  // Creditos ranking
+  var rankingCred = [...ranking].sort(function(a,b){ return b.creditos - a.creditos; });
+  html += '<div class="card">' +
+    '<div class="ch"><span class="ct">Creditos acumulados</span></div><div>';
+  rankingCred.forEach(function(r, i) {
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+      '<span style="font-size:20px;width:28px;text-align:center;">' + (medals[i]||('#'+(i+1))) + '</span>' +
+      '<div style="flex:1;font-size:13px;font-weight:500;">' + r.nombre + '</div>' +
+      '<span style="font-size:16px;font-weight:700;color:var(--ac);">' + r.creditos + '</span>' +
+      '<span style="font-size:10px;color:var(--tx3);">cred.</span>' +
+      '</div>';
+  });
+  html += '</div></div>';
+
+  document.getElementById('ranking-container').innerHTML = html;
+}
+
+window.toggleRanking = async function(value) {
+  if (!S.aid) return;
+  await FU('alumnos/' + S.aid, { en_ranking: value });
+  S.alumnos[S.aid].en_ranking = value;
+  toast(value ? 'Alumno agregado al ranking' : 'Alumno quitado del ranking');
+};
+
+// ── MENSAJES AUTOMATICOS POR HITOS DE TIEMPO ────────────────────────────────
+async function checkHitosMeses(uid) {
+  var a = await FG('alumnos/' + uid);
+  if (!a || !a.fecha_inicio) return;
+  
+  var inicio = new Date(a.fecha_inicio);
+  var hoy = new Date();
+  var meses = Math.floor((hoy - inicio) / (30 * 86400000));
+  var hitosCheck = a.hitos_tiempo || {};
+  
+  var hitos = [
+    { meses:3, msg:'3 meses entrenando' },
+    { meses:6, msg:'6 meses entrenando' },
+    { meses:12, msg:'1 ano entrenando' },
+  ];
+  
+  for (var i = 0; i < hitos.length; i++) {
+    var h = hitos[i];
+    if (meses >= h.meses && !hitosCheck['m'+h.meses]) {
+      // Calculate progress
+      var histPlanes = a.historial_planes ? Object.values(a.historial_planes) : [];
+      var ciclos = histPlanes.length;
+      var sesiones = a.sesiones ? Object.keys(a.sesiones).length : 0;
+      var creditos = a.creditos || 0;
+      
+      var texto = 'Felicitaciones! Llevas ' + h.msg + ' con HouseFit. ' +
+        sesiones + ' sesiones completadas, ' + ciclos + ' ciclos, ' + creditos + ' creditos acumulados. ' +
+        'Es un logro real — sigue adelante!';
+      
+      // Send message
+      await FP('alumnos/' + uid + '/mensajes', {
+        texto: texto, fecha: new Date().toISOString(), de: 'profe', leido: false
+      });
+      // Mark hito
+      await FU('alumnos/' + uid + '/hitos_tiempo/m' + h.meses, { fecha: hoy.toISOString().slice(0,10) });
+      // Notify profe
+      await FP('notificaciones', {
+        tipo: 'hito_tiempo', alumno: a.nombre, meses: h.meses,
+        fecha: new Date().toISOString(), leida: false
+      });
+    }
+  }
+}
+
+// ── PROYECCION DE META (basada en ciencia) ────────────────────────────────────
+function calcProyeccion(a) {
+  var dias = a.dias_plan || {};
+  var mejoras = [];
+  var nivel = (a.nivel || 'principiante').toLowerCase();
+
+  // Tasa maxima semanal y techo por nivel (basado en evidencia Ralston 2017)
+  var tasaMax, techoMax;
+  if (nivel.includes('avanz')) {
+    tasaMax = 0.005; // 0.5% por semana
+    techoMax = 0.07; // max +7% sobre peso actual
+  } else if (nivel.includes('inter')) {
+    tasaMax = 0.012; // 1.2% por semana
+    techoMax = 0.10; // max +10%
+  } else {
+    tasaMax = 0.025; // 2.5% por semana (principiante)
+    techoMax = 0.15; // max +15%
+  }
+
+  Object.values(dias).forEach(function(dia) {
+    if (!dia.ejercicios) return;
+    Object.values(dia.ejercicios).forEach(function(ej) {
+      if (!ej.perc || !ej.intervalo) return;
+      var percs = Object.entries(ej.perc)
+        .sort(function(a,b){return parseInt(a[0])-parseInt(b[0]);})
+        .map(function(kv){return kv[1];})
+        .filter(function(p){return p != null;});
+      if (percs.length < 2) return;
+
+      var pesoBase = parseFloat(ej.peso) || 0;
+      if (pesoBase === 0) return;
+      var iv = parseFloat(ej.intervalo) || 2.5;
+
+      // Calcular peso actual real basado en historico de percepciones
+      var pesoActual = pesoBase;
+      percs.forEach(function(p) {
+        if (p === 1) pesoActual += iv;
+        else if (p === 5) pesoActual = Math.max(pesoBase, pesoActual - iv);
+      });
+      pesoActual = Math.max(pesoBase, pesoActual);
+      if (pesoActual === 0) return;
+
+      // Tasa real de subida de las ultimas semanas
+      var subidasRecientes = percs.slice(-4).filter(function(p){return p===1;}).length;
+      var tasaReal = (subidasRecientes / Math.min(percs.length, 4)) * (iv / pesoActual);
+
+      // Usar la menor entre tasa real y tasa maxima del nivel
+      var tasaUsada = Math.min(tasaReal, tasaMax);
+      if (tasaUsada <= 0) return;
+
+      // Proyectar 12 semanas con desaceleracion progresiva
+      var pesoProyectado = pesoActual;
+      var techoAbsoluto = pesoActual * (1 + techoMax);
+      for (var s = 0; s < 12; s++) {
+        // Desaceleracion: cada semana la tasa baja 3%
+        var tasaSemana = tasaUsada * Math.pow(0.97, s);
+        pesoProyectado += pesoProyectado * tasaSemana;
+        if (pesoProyectado > techoAbsoluto) { pesoProyectado = techoAbsoluto; break; }
+      }
+
+      var ganancia = pesoProyectado - pesoActual;
+      // Redondear al intervalo mas cercano
+      ganancia = Math.round(ganancia / iv) * iv;
+      pesoProyectado = pesoActual + ganancia;
+
+      if (ganancia >= iv) {
+        mejoras.push({
+          nombre: ej.nombre,
+          pesoActual: Math.round(pesoActual * 10) / 10,
+          pesoFuturo: Math.round(pesoProyectado * 10) / 10,
+          ganancia: Math.round(ganancia * 10) / 10
+        });
+      }
+    });
+  });
+
+  return mejoras.sort(function(a,b){ return b.ganancia - a.ganancia; }).slice(0,5);
+}
 </script>
 </body>
 </html>
