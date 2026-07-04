@@ -1657,6 +1657,20 @@ function rPauta(a) {
   var cicloActual = S._ciclo !== 'siguiente';
   e.innerHTML = '<div id="ciclo-tabs" style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;max-width:300px;"></div>' +
     (!cicloActual ? '<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--am);">Estas armando el PROXIMO CICLO. No afecta al alumno hasta que lo actives.</div>' : '') + '<div class="tabs">' + semTabs + '</div><div class="tabs">' + dayTabs + '</div><div id="dia-c"></div>';
+  // Bind ciclo tabs in profe view
+  var _rpCtDiv = document.getElementById('ciclo-tabs');
+  if (_rpCtDiv) {
+    var _rpBtnA = document.createElement('button');
+    _rpBtnA.style.cssText = 'flex:1;padding:7px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:' + (cicloActual?'var(--ac)':'var(--bg3)') + ';color:' + (cicloActual?'var(--bg)':'var(--tx2)') + ';';
+    _rpBtnA.textContent = 'Ciclo actual';
+    _rpBtnA.onclick = function() { S._ciclo = 'actual'; rPauta(A()); };
+    var _rpBtnS = document.createElement('button');
+    _rpBtnS.style.cssText = 'flex:1;padding:7px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:' + (!cicloActual?'var(--am)':'var(--bg3)') + ';color:' + (!cicloActual?'var(--bg)':'var(--tx2)') + ';';
+    _rpBtnS.textContent = 'Proximo ciclo';
+    _rpBtnS.onclick = function() { S._ciclo = 'siguiente'; rPauta(A()); };
+    _rpCtDiv.appendChild(_rpBtnA);
+    _rpCtDiv.appendChild(_rpBtnS);
+  }
   rDiaProfe(a);
 }
 window.selSem = function(i) { S.sem = i; rPauta(A()); };
@@ -2710,6 +2724,8 @@ function avPauta(a) {
       if (Math.round((r3-d3)/86400000) <= 1) { racha2++; r3=d3; } else break;
     }
   }
+  var diaActualAv = (a.dia_actual !== undefined && a.dia_actual !== null) ? parseInt(a.dia_actual) || 0 : 0;
+  var semActualAv = (a.sem_actual !== undefined && a.sem_actual !== null) ? parseInt(a.sem_actual) || 0 : 0;
   var totalSemsAv = getSemanas(a);
   var SL_AV = [];
   for (var _si=0; _si<totalSemsAv; _si++) SL_AV.push('S'+(_si+1));
@@ -4562,4 +4578,3 @@ window.editarPuntosRanking = async function(rid, rk) {
 </script>
 </body>
 </html>
- 
