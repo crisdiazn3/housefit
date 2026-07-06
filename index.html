@@ -743,6 +743,61 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<div class="ov hidden" id="m-encuesta">
+  <div class="modal">
+    <div class="mt">Semana completada 🎉</div>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;">3 preguntas rápidas</p>
+    <div class="fg" style="margin-bottom:12px;">
+      <label class="fl">¿Cómo te sentiste esta semana?</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="enc-sent">
+        <button class="btn bg sm enc-opt" data-val="Muy bien">😄 Muy bien</button>
+        <button class="btn bg sm enc-opt" data-val="Bien">🙂 Bien</button>
+        <button class="btn bg sm enc-opt" data-val="Regular">😐 Regular</button>
+        <button class="btn bg sm enc-opt" data-val="Mal">😓 Mal</button>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:12px;">
+      <label class="fl">¿Qué ejercicio te costó más?</label>
+      <input class="fi" id="enc-ej" placeholder="Ej: Sentadilla...">
+    </div>
+    <div class="fg" style="margin-bottom:14px;">
+      <label class="fl">¿Algo que quieras cambiar?</label>
+      <textarea class="fta" id="enc-com" style="min-height:50px;"></textarea>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-encuesta')">Omitir</button>
+      <button class="btn bp sm" onclick="enviarEncuesta()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-add-ranking">
+  <div class="modal">
+    <div class="mt">Crear ranking</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Nombre del ranking</label>
+        <input class="fi" id="rank-nombre" placeholder="Ej: Ranking Julio, El más constante...">
+      </div>
+      <div class="fg"><label class="fl">Criterio</label>
+        <select class="fs" id="rank-criterio">
+          <option value="sesiones">Sesiones del mes</option>
+          <option value="creditos">Créditos acumulados</option>
+          <option value="semanas">Semanas completadas</option>
+          <option value="manual">Personalizado (asigno puntos)</option>
+        </select>
+      </div>
+      <div class="fg" style="grid-column:1/-1;">
+        <label class="fl">Alumnos participantes</label>
+        <div id="rank-alumnos-list" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);min-height:40px;"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-ranking')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveRanking()">Crear ranking</button>
+    </div>
+  </div>
+</div>
+
 <div id="toaster" class="toast"></div>
 
 <div class="ov hidden" id="m-resumen-pauta">
@@ -1202,6 +1257,7 @@ window.doLogin = async function(t) {
     el('app').classList.remove('hidden');
     el('vdash').classList.remove('hidden');
     await loadAlumnos();
+    setTimeout(function(){ checkRecordatorios(); }, 3000);
     renderAll();
   } else {
     var rut = v('li-rut').trim();
@@ -1372,6 +1428,7 @@ function calcSem(ej, si, a, di) {
     var dr = 0, dp = 0;
     if (p === 1) { dr = 2; dp = 1; }
     else if (p === 2) { dr = 1; }
+    else if (p === 3) { dr = 1; }
     else if (p === 4) { dr = -1; }
     else if (p === 5) { dr = -2; dp = -1; }
     if (a && di != null) {
@@ -1474,6 +1531,12 @@ function rDash(a) {
     '<div>' + (rows || '<div style="padding:20px;text-align:center;color:var(--tx3);">Sin ejercicios</div>') + '</div></div>';
 }
 
+function getDplanPath(aid) {
+  return S._ciclo === 'siguiente'
+    ? 'alumnos/' + aid + '/dias_plan_siguiente'
+    : 'alumnos/' + aid + '/dias_plan';
+}
+
 // PAUTA PROFE
 function rPauta(a) {
   var e = el('vpauta');
@@ -1491,7 +1554,23 @@ function rPauta(a) {
   for (var d = 0; d < DIAS; d++) {
     dayTabs += '<button class="tab' + (d === S.dia ? ' on' : '') + '" onclick="selDia(' + d + ')">Dia ' + (d + 1) + '</button>';
   }
-  e.innerHTML = '<div class="tabs">' + semTabs + '</div><div class="tabs">' + dayTabs + '</div><div id="dia-c"></div>';
+  var cicloActual = S._ciclo !== 'siguiente';
+  e.innerHTML = '<div id="ciclo-tabs" style="display:flex;gap:0;margin-bottom:10px;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;max-width:280px;"></div>' +
+    (!cicloActual ? '<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:7px 12px;margin-bottom:10px;font-size:11px;color:var(--am);">Armando PROXIMO CICLO — no afecta al alumno hasta activarlo</div>' : '') +
+    '<div class="tabs">' + semTabs + '</div><div class="tabs">' + dayTabs + '</div><div id="dia-c"></div>';
+  var cicloDiv = document.getElementById('ciclo-tabs');
+  if (cicloDiv) {
+    var btnA = document.createElement('button');
+    btnA.style.cssText = 'flex:1;padding:7px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:' + (cicloActual?'var(--ac)':'var(--bg3)') + ';color:' + (cicloActual?'var(--bg)':'var(--tx2)') + ';';
+    btnA.textContent = 'Ciclo actual';
+    btnA.onclick = function() { S._ciclo = 'actual'; rPauta(A()); };
+    var btnS = document.createElement('button');
+    btnS.style.cssText = 'flex:1;padding:7px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:' + (!cicloActual?'var(--am)':'var(--bg3)') + ';color:' + (!cicloActual?'var(--bg)':'var(--tx2)') + ';';
+    btnS.textContent = 'Proximo ciclo';
+    btnS.onclick = function() { S._ciclo = 'siguiente'; rPauta(A()); };
+    cicloDiv.appendChild(btnA);
+    cicloDiv.appendChild(btnS);
+  }
   rDiaProfe(a);
 }
 window.selSem = function(i) { S.sem = i; rPauta(A()); };
@@ -1499,7 +1578,8 @@ window.selDia = function(i) { S.dia = i; rPauta(A()); };
 
 function rDiaProfe(a) {
   var e = el('dia-c');
-  var dia = (a.dias_plan && a.dias_plan[S.dia]) ? a.dias_plan[S.dia] : {};
+  var dplanSrc = S._ciclo === 'siguiente' ? (a.dias_plan_siguiente || {}) : (a.dias_plan || {});
+  var dia = dplanSrc[S.dia] || {};
   var ejs = dia.ejercicios ? Object.entries(dia.ejercicios) : [];
   var si = S.sem, isD = si === 5;
   var pre = (dia.pre && dia.pre[si]) ? dia.pre[si] : {};
@@ -1741,7 +1821,7 @@ window.saveEj = async function() {
     descanso: parseInt(v('ej-d')) || null,
     perc: {}
   };
-  await FP('alumnos/' + ctx.aid + '/dias_plan/' + ctx.di + '/ejercicios', ej);
+  await FP(getDplanPath(ctx.aid) + '/' + ctx.di + '/ejercicios', ej);
   S.alumnos[ctx.aid] = await FG('alumnos/' + ctx.aid);
   closeM('m-ej'); toast('Ejercicio agregado');
   rPauta(A());
@@ -2252,6 +2332,14 @@ function rFicha(a) {
     '<div class="cb"><div class="g2">' + camposH + '</div></div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Configuracion</span></div>' +
+    (function() {
+      try {
+        if (a.dias_plan_siguiente && typeof a.dias_plan_siguiente === 'object' && Object.keys(a.dias_plan_siguiente).length > 0) {
+          return '<div style="padding:10px 14px;border-bottom:1px solid var(--bd);background:rgba(255,184,48,.06);"><div style="font-size:12px;font-weight:600;color:var(--am);margin-bottom:5px;">Proximo ciclo listo</div><button id="btn-activar-ciclo" class="btn bp sm">Activar proximo ciclo</button></div>';
+        }
+      } catch(e2) {}
+      return '';
+    })() +
     '<div style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">' +
     '<div><div style="font-size:13px;font-weight:500;">Participa en el ranking</div>' +
     '<div style="font-size:11px;color:var(--tx2);">Aparece en la tabla de ranking mensual</div></div>' +
@@ -2301,6 +2389,10 @@ function rFicha(a) {
     '<div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;" id="zona-danger"></div>' +
     '</div></div>';
   // Bind buttons synchronously
+  // Bind activar ciclo
+  var _btnAC = document.getElementById('btn-activar-ciclo');
+  if (_btnAC) _btnAC.onclick = function() { activarProximoCiclo(); };
+
   (function(aid) {
     var zd = document.getElementById('zona-danger');
     if (zd) {
@@ -2550,6 +2642,26 @@ window.regSes = async function() {
   avPauta(S.alumnos[S.uid]);
 };
 
+function calcMolestia(pre) {
+  if (pre && pre.molestia_fuerte) return { dp: -2, dr: -1 };
+  if (pre && pre.molestia_leve)   return { dp: -1, dr: 0 };
+  return { dp: 0, dr: 0 };
+}
+
+window.avMolestia = async function(tipo) {
+  var a = S.alumnos[S.uid];
+  if (!a) return;
+  var cur = (a.dias_plan && a.dias_plan[S.avdia] && a.dias_plan[S.avdia].pre && a.dias_plan[S.avdia].pre[S.avsem]) ? a.dias_plan[S.avdia].pre[S.avsem][tipo] : false;
+  var nv = !cur;
+  await FU('alumnos/' + S.uid + '/dias_plan/' + S.avdia + '/pre/' + S.avsem, { [tipo]: nv });
+  if (!a.dias_plan) a.dias_plan = {};
+  if (!a.dias_plan[S.avdia]) a.dias_plan[S.avdia] = {};
+  if (!a.dias_plan[S.avdia].pre) a.dias_plan[S.avdia].pre = {};
+  if (!a.dias_plan[S.avdia].pre[S.avsem]) a.dias_plan[S.avdia].pre[S.avsem] = {};
+  a.dias_plan[S.avdia].pre[S.avsem][tipo] = nv;
+  avRenderDia(a);
+};
+
 function avRenderDia(a) {
   var e = el('av-dia');
   var dia = (a.dias_plan && a.dias_plan[S.avdia]) ? a.dias_plan[S.avdia] : {};
@@ -2577,6 +2689,15 @@ function avRenderDia(a) {
   var html = progBar + '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
     '<span style="font-size:10px;color:var(--tx3);font-family:monospace;text-transform:uppercase;letter-spacing:.06em;">Pre S' + (si+1) + '</span>' +
     '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + preH2 + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);">' +
+    '<span style="font-size:10px;color:var(--tx3);font-family:monospace;">MOLESTIA FÍSICA</span>' +
+    (function(){
+      var molLeve = pre.molestia_leve;
+      var molFuerte = pre.molestia_fuerte;
+      return '<div onclick="avMolestia(\'molestia_leve\')" style="display:flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (molLeve?'rgba(255,184,48,.4)':'var(--bd)') + ';background:' + (molLeve?'rgba(255,184,48,.1)':'var(--bg3)') + ';font-size:11px;color:' + (molLeve?'var(--am)':'var(--tx3)') + ';">🤧 Leve</div>' +
+        '<div onclick="avMolestia(\'molestia_fuerte\')" style="display:flex;align-items:center;gap:3px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid ' + (molFuerte?'rgba(255,77,106,.4)':'var(--bd)') + ';background:' + (molFuerte?'rgba(255,77,106,.1)':'var(--bg3)') + ';font-size:11px;color:' + (molFuerte?'var(--rd)':'var(--tx3)') + ';">🤒 Fuerte</div>';
+    })() +
+    '</div>' +
     '<span style="font-size:11px;color:' + preClr2 + ';margin-left:auto;">' + preMod2 + '</span></div>';
 
   if (!ejs.length) {
@@ -2598,6 +2719,12 @@ function avRenderDia(a) {
       ejList.forEach(function(kv) {
         var ejId=kv[0],ej=kv[1];
         var cs=calcSem(ej,si,a,S.avdia);
+        var mol = calcMolestia(pre);
+        if (mol.dp !== 0 && cs.peso > 0) {
+          var iv2 = parseFloat(ej.intervalo) || 2.5;
+          cs.peso = Math.max(0, parseFloat((cs.peso + mol.dp * iv2).toFixed(1)));
+        }
+        if (mol.dr !== 0) cs.reps = Math.max(1, cs.reps + mol.dr);
         var perc=(ej.perc&&ej.perc[si]!=null)?ej.perc[si]:null;
         var percH = '';
         if (!isD) {
@@ -2739,12 +2866,14 @@ window.finalizarDia = async function() {
   var a = S.alumnos[S.uid];
   if (!a) return;
 
-  // Validar que todos los ejercicios tengan percepcion
+  // Validar que todos los ejercicios tengan percepcion (excepto descarga)
   var diaActual2 = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
   var semActual2 = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
+  var totalSems2 = getSemanas(a);
+  var esDescarga = semActual2 >= totalSems2;
   var diasPlan2 = a.dias_plan || {};
   var diaData2 = diasPlan2[diaActual2];
-  if (diaData2 && diaData2.ejercicios) {
+  if (!esDescarga && diaData2 && diaData2.ejercicios) {
     var sinPerc = [];
     Object.values(diaData2.ejercicios).forEach(function(ej) {
       var percKey = 'p' + (semActual2 + 1);
@@ -2783,6 +2912,7 @@ window.finalizarDia = async function() {
       S.alumnos[S.uid].dia_actual = diasKeys[0]; S.alumnos[S.uid].sem_actual = nextSem;
       var isDesc = nextSem === totalSems;
       var msg = isDesc ? 'Semana completada. La proxima es tu semana de descarga.' : 'Semana completada. Pasamos al siguiente nivel!';
+      setTimeout(function(){ if(window.mostrarEncuesta) mostrarEncuesta(); }, 2500);
       var t2 = el('toaster'); t2.innerHTML = '<div style="font-size:14px;font-weight:600;">'+msg+'</div>';
       t2.className = 'toast show tok'; setTimeout(function(){t2.className='toast';t2.textContent='';},5000);
       await FP('notificaciones',{tipo:'semana_completa',alumno:a.nombre,semana:semActual+1,fecha:new Date().toISOString(),leida:false});
@@ -3856,8 +3986,11 @@ function isAlumnoActivo(a) {
 function rRanking() {
   var e = el('vranking');
   if (!e) return;
-  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Ranking mensual</span></div>' +
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Ranking</span>' +
+    '<button id="btn-new-ranking" class="btn bp sm">+ Crear ranking</button></div>' +
     '<div id="ranking-container"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando...</div></div>';
+  var _btnNR = document.getElementById('btn-new-ranking');
+  if (_btnNR) _btnNR.onclick = function() { openCrearRanking(); };
 
   // Build ranking from alumnos data
   var alumnos = Object.entries(S.alumnos).filter(function(kv){ return kv[1].en_ranking; });
@@ -4038,6 +4171,135 @@ function calcProyeccion(a) {
 
   return mejoras.sort(function(a,b){ return b.ganancia - a.ganancia; }).slice(0,5);
 }
+
+// ── PRÓXIMO CICLO ────────────────────────────────────────────────────────────
+window.activarProximoCiclo = async function() {
+  var a = A();
+  if (!a || !a.dias_plan_siguiente || !Object.keys(a.dias_plan_siguiente).length) {
+    toast('No hay próximo ciclo preparado','err'); return;
+  }
+  if (!confirm('Activar el próximo ciclo? El plan actual se archivará.')) return;
+  await FP('alumnos/' + S.aid + '/historial_planes', {
+    label: 'Ciclo archivado ' + new Date().toLocaleDateString('es-CL'),
+    fecha: new Date().toISOString().slice(0,10),
+    dias_plan: a.dias_plan || {}, semanas: getSemanas(a)
+  });
+  await FU('alumnos/' + S.aid, {
+    dias_plan: a.dias_plan_siguiente,
+    dias_plan_siguiente: null,
+    dia_actual: 0, sem_actual: 0
+  });
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  S._ciclo = 'actual';
+  toast('✓ Próximo ciclo activado!');
+  renderAll();
+};
+
+// ── RECORDATORIO AUTOMÁTICO ──────────────────────────────────────────────────
+async function checkRecordatorios() {
+  var hoy = new Date();
+  var hace2 = new Date(hoy.getTime() - 2 * 86400000).toISOString().slice(0,10);
+  for (var uid in S.alumnos) {
+    var a = S.alumnos[uid];
+    if (!a || !a.sesiones) continue;
+    var sesiones = Object.values(a.sesiones).sort(function(a,b){ return b.fecha.localeCompare(a.fecha); });
+    if (!sesiones.length) continue;
+    var ultima = sesiones[0].fecha;
+    if (ultima <= hace2) {
+      var key = 'rec_' + uid + '_' + hoy.toISOString().slice(0,10);
+      if (!sessionStorage.getItem(key)) {
+        var dias = Math.floor((hoy - new Date(ultima)) / 86400000);
+        await FP('alumnos/' + uid + '/mensajes', {
+          texto: 'Hola ' + (a.nombre||'').split(' ')[0] + '! Llevas ' + dias + ' días sin entrenar. Recuerda que la constancia es la clave. Cuando quieras retomamos! 💪',
+          fecha: new Date().toISOString(), de: 'profe', leido: false
+        });
+        sessionStorage.setItem(key, '1');
+      }
+    }
+  }
+}
+
+// ── ENCUESTA SEMANAL ──────────────────────────────────────────────────────────
+var _encResp = {};
+window.mostrarEncuesta = function() {
+  _encResp = {};
+  document.querySelectorAll('.enc-opt').forEach(function(b) {
+    b.style.background = 'var(--bg3)'; b.style.color = 'var(--tx2)';
+    b.onclick = function() {
+      _encResp.sentiste = b.getAttribute('data-val');
+      document.querySelectorAll('.enc-opt').forEach(function(ob) {
+        ob.style.background = 'var(--bg3)'; ob.style.color = 'var(--tx2)';
+      });
+      b.style.background = 'var(--ac2)'; b.style.color = 'var(--ac)';
+    };
+  });
+  var m = document.getElementById('m-encuesta');
+  if (m) m.classList.remove('hidden');
+};
+window.enviarEncuesta = async function() {
+  var a = S.alumnos[S.uid];
+  if (!a) return;
+  var enc = {
+    fecha: new Date().toISOString().slice(0,10),
+    semana: a.sem_actual || 0,
+    sentiste: _encResp.sentiste || '',
+    ejercicio: document.getElementById('enc-ej') ? document.getElementById('enc-ej').value.trim() : '',
+    comentario: document.getElementById('enc-com') ? document.getElementById('enc-com').value.trim() : '',
+    alumno: a.nombre
+  };
+  await FP('alumnos/' + S.uid + '/encuestas', enc);
+  await FP('notificaciones', { tipo:'encuesta', alumno:a.nombre, fecha:new Date().toISOString(), leida:false, data:enc });
+  closeM('m-encuesta');
+  toast('Gracias por tu feedback!');
+};
+
+window.openCrearRanking = function() {
+  var listDiv = document.getElementById('rank-alumnos-list');
+  if (listDiv) {
+    listDiv.innerHTML = '';
+    Object.entries(S.alumnos).forEach(function(kv) {
+      var uid = kv[0], al = kv[1];
+      var btn = document.createElement('div');
+      btn.style.cssText = 'padding:4px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:12px;background:var(--bg3);color:var(--tx2);';
+      btn.textContent = al.nombre;
+      btn.setAttribute('data-uid', uid);
+      btn.setAttribute('data-sel', '0');
+      btn.onclick = function() {
+        var sel = btn.getAttribute('data-sel') === '1';
+        btn.setAttribute('data-sel', sel ? '0' : '1');
+        btn.style.background = sel ? 'var(--bg3)' : 'var(--ac2)';
+        btn.style.color = sel ? 'var(--tx2)' : 'var(--ac)';
+        btn.style.borderColor = sel ? 'var(--bd)' : 'rgba(61,255,160,.3)';
+      };
+      listDiv.appendChild(btn);
+    });
+  }
+  var m = document.getElementById('m-add-ranking');
+  if (m) m.classList.remove('hidden');
+};
+
+window.saveRanking = async function() {
+  var nombre = document.getElementById('rank-nombre') ? document.getElementById('rank-nombre').value.trim() : '';
+  if (!nombre) { toast('Nombre obligatorio', 'err'); return; }
+  var criterio = document.getElementById('rank-criterio') ? document.getElementById('rank-criterio').value : 'sesiones';
+  var alumnos = [];
+  document.querySelectorAll('#rank-alumnos-list [data-uid]').forEach(function(btn) {
+    if (btn.getAttribute('data-sel') === '1') alumnos.push(btn.getAttribute('data-uid'));
+  });
+  if (!alumnos.length) { toast('Selecciona al menos un alumno', 'err'); return; }
+  await FP('rankings', { nombre: nombre, criterio: criterio, alumnos: alumnos, fecha: new Date().toISOString().slice(0,10), puntos: {} });
+  closeM('m-add-ranking');
+  if (document.getElementById('rank-nombre')) document.getElementById('rank-nombre').value = '';
+  toast('Ranking creado');
+  rRanking();
+};
+
+window.eliminarRanking = async function(id) {
+  if (!confirm('¿Eliminar este ranking?')) return;
+  await FR('rankings/' + id);
+  toast('Ranking eliminado');
+  rRanking();
+};
 </script>
 </body>
 </html>
