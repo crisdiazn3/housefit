@@ -389,6 +389,14 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
       <div class="fg"><label class="fl">Observaciones</label><input class="fi" id="a-obs"></div>
       <div class="fg"><label class="fl">Monto mensual ($)</label><input class="fi" id="a-mon" type="number" placeholder="50000"></div>
       <div class="fg"><label class="fl">Próximo pago</label><input class="fi" id="a-pag" type="date"></div>
+      <div class="fg" style="grid-column:1/-1;">
+        <label class="fl">Valor primer mes (proporcional)</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="fi" id="a-pag1" type="number" placeholder="Se calcula segun fecha de inicio" style="flex:1;">
+          <button type="button" class="btn bg sm" id="btn-calc-pago1" style="white-space:nowrap;">Calcular sugerido</button>
+        </div>
+        <div id="pago1-sugerencia" style="font-size:11px;color:var(--tx3);margin-top:4px;"></div>
+      </div>
       <div class="fg"><label class="fl">Semanas de carga</label><input class="fi" id="a-scarga" type="number" min="2" max="12" placeholder="5" value="5"></div>
       <div class="fg"><label class="fl">% Descarga (última sem.)</label><input class="fi" id="a-sdesc" type="number" min="30" max="80" placeholder="60" value="60"></div>
     </div>
@@ -1257,7 +1265,7 @@ window.doLogin = async function(t) {
     el('app').classList.remove('hidden');
     el('vdash').classList.remove('hidden');
     await loadAlumnos();
-    setTimeout(function(){ checkRecordatorios(); }, 3000);
+    setTimeout(function(){ checkRecordatorios(); checkAvisosPago(); }, 3000);
     renderAll();
   } else {
     var rut = v('li-rut').trim();
@@ -1427,7 +1435,7 @@ function calcSem(ej, si, a, di) {
     var p = (ej.perc && ej.perc[s] != null) ? ej.perc[s] : null;
     var dr = 0, dp = 0;
     if (p === 1) { dr = 2; dp = 1; }
-    else if (p === 2) { dr = 1; }
+    else if (p === 2) { dr = 2; }
     else if (p === 3) { dr = 1; }
     else if (p === 4) { dr = -1; }
     else if (p === 5) { dr = -2; dp = -1; }
@@ -2459,6 +2467,7 @@ window.saveAl = async function() {
     dias: parseInt(v('a-dia')) || DIAS,
     lugar: v('a-lug'), lesion: v('a-les') || 'Ninguna',
     obs: v('a-obs'), monto: v('a-mon') || null, pago: v('a-pag') || null,
+    primer_pago_monto: v('a-pag1') || null,
     semanas_carga: parseInt(v('a-scarga')) || 5,
     desc_pct: parseInt(v('a-sdesc')) || 60,
     fecha_inicio: v('a-finicio') || null
@@ -2796,18 +2805,38 @@ function avRenderDia(a) {
   // Logros section in resumen
   html += avLogros(a);
 
-  // Proyeccion de meta
-  var proyecciones = calcProyeccion(a);
-  if (proyecciones.length > 0) {
-    html += '<div class="card" style="margin-top:14px;margin-bottom:14px;"><div class="ch"><span class="ct">Proyeccion a 3 meses</span></div><div>';
-    proyecciones.slice(0,3).forEach(function(p) {
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);">' +
-        '<div style="flex:1;font-size:12px;">' + p.nombre + '</div>' +
-        '<div style="font-size:11px;color:var(--tx2);">' + p.pesoActual + 'kg</div>' +
-        '<div style="font-size:11px;color:var(--tx3);">→</div>' +
-        '<div style="font-size:13px;font-weight:600;color:var(--ac);">' + p.pesoFuturo + 'kg</div>' +
-        '<div style="font-size:10px;color:var(--ac);">+' + p.ganancia + 'kg</div>' +
-        '</div>';
+  // Banner aviso de pago
+  if (a.pago) {
+    var pagoD = new Date(a.pago + 'T00:00:00');
+    var diasP = Math.ceil((pagoD - new Date()) / 86400000);
+    if (diasP <= 5) {
+      var montoT = a.monto ? ('$' + parseInt(a.monto).toLocaleString('es-CL')) : '';
+      var colorP = diasP < 0 ? 'var(--rd)' : diasP <= 1 ? 'var(--rd)' : 'var(--am)';
+      var txtP = diasP < 0 ? 'Tu pago esta vencido' : diasP === 0 ? 'Tu pago vence hoy' : diasP === 1 ? 'Tu pago vence manana' : 'Tu pago vence en ' + diasP + ' dias';
+      html += '<div style="background:' + colorP + '22;border:1px solid ' + colorP + '55;border-radius:var(--r);padding:8px 14px;margin-bottom:10px;font-size:12px;color:' + colorP + ';">' +
+        txtP + (montoT ? ' (' + montoT + ')' : '') + '</div>';
+    }
+  }
+
+  // Proyeccion de meta - 1-2 por dia
+  var proyDias = calcProyeccion(a);
+  if (proyDias.length > 0) {
+    html += '<div class="card" style="margin-top:14px;margin-bottom:14px;">' +
+      '<div class="ch"><span class="ct">Proyeccion a 3 meses</span>' +
+      '<span style="font-size:10px;color:var(--tx3);">Basado en tu progresion real</span></div><div>';
+    proyDias.forEach(function(d) {
+      html += '<div style="padding:8px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="font-size:10px;color:var(--tx3);font-family:monospace;margin-bottom:5px;">DIA ' + d.dia + '</div>';
+      d.ejercicios.forEach(function(p) {
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">' +
+          '<div style="flex:1;font-size:12px;font-weight:500;">' + p.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--tx2);">' + p.pesoActual + 'kg</div>' +
+          '<div style="font-size:10px;color:var(--tx3);">→</div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--ac);">' + p.pesoFuturo + 'kg</div>' +
+          '<div style="font-size:10px;color:var(--ac);font-family:monospace;">+' + p.ganancia + '</div>' +
+          '</div>';
+      });
+      html += '</div>';
     });
     html += '</div></div>';
   }
@@ -3488,11 +3517,16 @@ window.saveBeneficio = async function() {
     categoria: el('ben-cat') ? el('ben-cat').value : 'otro',
     fecha: new Date().toISOString().slice(0,10)
   };
-  await FP('beneficios', ben);
-  closeM('m-add-beneficio');
-  ['ben-empresa','ben-desc','ben-codigo','ben-link','ben-logo'].forEach(function(id){ if(el(id)) el(id).value=''; });
-  toast('Beneficio agregado');
-  rBeneficios();
+  try {
+    await FP('beneficios', ben);
+    closeM('m-add-beneficio');
+    ['ben-empresa','ben-desc','ben-codigo','ben-link','ben-logo'].forEach(function(id){ if(el(id)) el(id).value=''; });
+    toast('Beneficio agregado');
+    rBeneficios();
+  } catch (err) {
+    console.error('Error guardando beneficio:', err);
+    toast('Error al guardar: ' + (err.message || 'revisa la consola'), 'err');
+  }
 };
 
 window.eliminarBeneficio = async function(id) {
@@ -4096,25 +4130,32 @@ async function checkHitosMeses(uid) {
 // ── PROYECCION DE META (basada en ciencia) ────────────────────────────────────
 function calcProyeccion(a) {
   var dias = a.dias_plan || {};
-  var mejoras = [];
   var nivel = (a.nivel || 'principiante').toLowerCase();
+  var resultado = [];
 
-  // Tasa maxima semanal y techo por nivel (basado en evidencia Ralston 2017)
   var tasaMax, techoMax;
-  if (nivel.includes('avanz')) {
-    tasaMax = 0.005; // 0.5% por semana
-    techoMax = 0.07; // max +7% sobre peso actual
-  } else if (nivel.includes('inter')) {
-    tasaMax = 0.012; // 1.2% por semana
-    techoMax = 0.10; // max +10%
-  } else {
-    tasaMax = 0.025; // 2.5% por semana (principiante)
-    techoMax = 0.15; // max +15%
-  }
+  if (nivel.includes('avanz')) { tasaMax = 0.005; techoMax = 0.07; }
+  else if (nivel.includes('inter')) { tasaMax = 0.012; techoMax = 0.10; }
+  else { tasaMax = 0.025; techoMax = 0.15; }
 
-  Object.values(dias).forEach(function(dia) {
+  var MUSCULO_PRIORIDAD = {
+    'CUADRICEPS':10,'GLUTEO':10,'FEMORAL':9,'ESPALDA':9,
+    'PECTORAL':8,'HOMBRO':7,'BICEPS':6,'TRICEPS':6,
+    'TRAPECIO':5,'PANTORRILLA':4
+  };
+  var EXCLUIR = ['CORE','ABDOMEN','MOVILIDAD','CARDIO','FLEXIBILIDAD'];
+
+  Object.entries(dias).sort(function(a,b){return parseInt(a[0])-parseInt(b[0]);}).forEach(function(dkv) {
+    var dNum = parseInt(dkv[0]) + 1;
+    var dia = dkv[1];
     if (!dia.ejercicios) return;
+
+    var candidatos = [];
     Object.values(dia.ejercicios).forEach(function(ej) {
+      var musculo = (ej.musculo || '').toUpperCase();
+      if (EXCLUIR.some(function(ex){return musculo.includes(ex);})) return;
+      var pesoBase = parseFloat(ej.peso) || 0;
+      if (pesoBase === 0) return;
       if (!ej.perc || !ej.intervalo) return;
       var percs = Object.entries(ej.perc)
         .sort(function(a,b){return parseInt(a[0])-parseInt(b[0]);})
@@ -4122,11 +4163,7 @@ function calcProyeccion(a) {
         .filter(function(p){return p != null;});
       if (percs.length < 2) return;
 
-      var pesoBase = parseFloat(ej.peso) || 0;
-      if (pesoBase === 0) return;
       var iv = parseFloat(ej.intervalo) || 2.5;
-
-      // Calcular peso actual real basado en historico de percepciones
       var pesoActual = pesoBase;
       percs.forEach(function(p) {
         if (p === 1) pesoActual += iv;
@@ -4135,41 +4172,37 @@ function calcProyeccion(a) {
       pesoActual = Math.max(pesoBase, pesoActual);
       if (pesoActual === 0) return;
 
-      // Tasa real de subida de las ultimas semanas
       var subidasRecientes = percs.slice(-4).filter(function(p){return p===1;}).length;
       var tasaReal = (subidasRecientes / Math.min(percs.length, 4)) * (iv / pesoActual);
-
-      // Usar la menor entre tasa real y tasa maxima del nivel
       var tasaUsada = Math.min(tasaReal, tasaMax);
       if (tasaUsada <= 0) return;
 
-      // Proyectar 12 semanas con desaceleracion progresiva
       var pesoProyectado = pesoActual;
-      var techoAbsoluto = pesoActual * (1 + techoMax);
+      var techo = pesoActual * (1 + techoMax);
       for (var s = 0; s < 12; s++) {
-        // Desaceleracion: cada semana la tasa baja 3%
-        var tasaSemana = tasaUsada * Math.pow(0.97, s);
-        pesoProyectado += pesoProyectado * tasaSemana;
-        if (pesoProyectado > techoAbsoluto) { pesoProyectado = techoAbsoluto; break; }
+        pesoProyectado += pesoProyectado * (tasaUsada * Math.pow(0.97, s));
+        if (pesoProyectado > techo) { pesoProyectado = techo; break; }
       }
-
-      var ganancia = pesoProyectado - pesoActual;
-      // Redondear al intervalo mas cercano
-      ganancia = Math.round(ganancia / iv) * iv;
+      var ganancia = Math.round((pesoProyectado - pesoActual) / iv) * iv;
+      if (ganancia < iv) return;
       pesoProyectado = pesoActual + ganancia;
 
-      if (ganancia >= iv) {
-        mejoras.push({
-          nombre: ej.nombre,
-          pesoActual: Math.round(pesoActual * 10) / 10,
-          pesoFuturo: Math.round(pesoProyectado * 10) / 10,
-          ganancia: Math.round(ganancia * 10) / 10
-        });
-      }
+      var prioridad = MUSCULO_PRIORIDAD[musculo] || 3;
+      candidatos.push({
+        nombre: ej.nombre, musculo: ej.musculo,
+        pesoActual: Math.round(pesoActual * 10) / 10,
+        pesoFuturo: Math.round(pesoProyectado * 10) / 10,
+        ganancia: Math.round(ganancia * 10) / 10,
+        prioridad: prioridad
+      });
     });
+
+    candidatos.sort(function(a,b){ return b.prioridad - a.prioridad || b.ganancia - a.ganancia; });
+    var top2 = candidatos.slice(0,2);
+    if (top2.length > 0) resultado.push({ dia: dNum, ejercicios: top2 });
   });
 
-  return mejoras.sort(function(a,b){ return b.ganancia - a.ganancia; }).slice(0,5);
+  return resultado;
 }
 
 // ── PRÓXIMO CICLO ────────────────────────────────────────────────────────────
@@ -4300,6 +4333,72 @@ window.eliminarRanking = async function(id) {
   toast('Ranking eliminado');
   rRanking();
 };
+
+// ── SISTEMA DE PAGOS PROPORCIONAL ────────────────────────────────────────────
+function calcDiasRestantesMes(fechaInicio) {
+  var d = new Date(fechaInicio + 'T00:00:00');
+  var anio = d.getFullYear(), mes = d.getMonth();
+  var diasMes = new Date(anio, mes + 1, 0).getDate();
+  var diaInicio = d.getDate();
+  var diasRestantes = diasMes - diaInicio;
+  return { diasMes: diasMes, diaInicio: diaInicio, diasRestantes: diasRestantes };
+}
+
+function calcPagoProporcional(fechaInicio, montoMensual) {
+  var info = calcDiasRestantesMes(fechaInicio);
+  var costoDiario = montoMensual / info.diasMes;
+  var montoProporcional = Math.round(costoDiario * info.diasRestantes);
+  return Object.assign({ costoDiario: Math.round(costoDiario), montoProporcional: montoProporcional }, info);
+}
+
+function calcProximoPagoDate(fechaInicio) {
+  var d = new Date(fechaInicio + 'T00:00:00');
+  var anio = d.getFullYear(), mes = d.getMonth();
+  var siguiente = new Date(anio, mes + 1, 1);
+  return siguiente.toISOString().slice(0,10);
+}
+
+window.calcularPago1Sugerido = function() {
+  var fi = el('a-finicio') ? el('a-finicio').value : '';
+  var monto = parseFloat(el('a-mon') ? el('a-mon').value : 0) || 0;
+  var sugDiv = el('pago1-sugerencia');
+  if (!fi || !monto) {
+    if (sugDiv) sugDiv.textContent = 'Completa fecha de inicio y monto mensual primero.';
+    return;
+  }
+  var calc = calcPagoProporcional(fi, monto);
+  if (el('a-pag1')) el('a-pag1').value = calc.montoProporcional;
+  if (el('a-pag')) el('a-pag').value = calcProximoPagoDate(fi);
+  if (sugDiv) sugDiv.textContent = 'Sugerido: $' + calc.montoProporcional.toLocaleString('es-CL') +
+    ' (' + calc.diasRestantes + ' dias restantes de ' + calc.diasMes + '. Costo diario: $' + calc.costoDiario.toLocaleString('es-CL') + '). Proximo pago completo: 1ro del mes siguiente.';
+};
+
+async function checkAvisosPago() {
+  var hoy = new Date();
+  var hoyStr = hoy.toISOString().slice(0,10);
+  for (var uid in S.alumnos) {
+    var a = S.alumnos[uid];
+    if (!a || !a.pago) continue;
+    var pagoDate = new Date(a.pago + 'T00:00:00');
+    var diasRest = Math.ceil((pagoDate - hoy) / 86400000);
+    if ([5,3,2,1].indexOf(diasRest) === -1) continue;
+    var key = 'avpago_' + uid + '_' + diasRest + '_' + hoyStr.slice(0,7);
+    if (sessionStorage.getItem(key)) continue;
+    var montoTxt = a.monto ? ('$' + parseInt(a.monto).toLocaleString('es-CL')) : 'tu mensualidad';
+    var msg = diasRest === 1
+      ? 'Hola ' + (a.nombre||'').split(' ')[0] + '! Manana vence tu pago (' + montoTxt + '). Recuerda regularizarlo para seguir entrenando sin problemas.'
+      : 'Hola ' + (a.nombre||'').split(' ')[0] + '! Tu proximo pago (' + montoTxt + ') vence en ' + diasRest + ' dias. Cualquier duda, escribeme por aqui.';
+    await FP('alumnos/' + uid + '/mensajes', { texto: msg, fecha: new Date().toISOString(), de: 'profe', leido: false });
+    sessionStorage.setItem(key, '1');
+  }
+}
+
+// Bind boton calcular pago1 (delegado por si el modal se re-renderiza)
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'btn-calc-pago1') {
+    calcularPago1Sugerido();
+  }
+});
 </script>
 </body>
 </html>
