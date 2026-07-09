@@ -1235,12 +1235,47 @@ document.querySelectorAll('.ov').forEach(function(m) {
   m.addEventListener('click', function(e) { if (e.target === m) m.classList.add('hidden'); });
 });
 
+// SESION PERSISTENTE
+async function restoreSession() {
+  var raw = localStorage.getItem('hft-session');
+  if (!raw) return false;
+  var sess;
+  try { sess = JSON.parse(raw); } catch(e) { localStorage.removeItem('hft-session'); return false; }
+  if (!sess || !sess.modo) return false;
+
+  if (sess.modo === 'profe') {
+    S.modo = 'profe';
+    el('login').classList.add('hidden');
+    el('app').classList.remove('hidden');
+    el('vdash').classList.remove('hidden');
+    await loadAlumnos();
+    setTimeout(function(){ checkRecordatorios(); checkAvisosPago(); }, 3000);
+    renderAll();
+    return true;
+  }
+
+  if (sess.modo === 'alumno' && sess.uid) {
+    var found = await FG('alumnos/' + sess.uid);
+    if (!found) { localStorage.removeItem('hft-session'); return false; }
+    S.modo = 'alumno'; S.uid = sess.uid; S.alumnos[sess.uid] = found;
+    el('login').classList.add('hidden');
+    el('alumno-app').classList.remove('hidden');
+    el('av-name').textContent = found.nombre;
+    renderAV();
+    return true;
+  }
+  return false;
+}
+
 // INIT
 async function init() {
   var bib = await FG('biblioteca');
   if (bib) S.bibx = Object.values(bib);
   el('ls').classList.add('hidden');
-  el('login').classList.remove('hidden');
+  var restored = await restoreSession();
+  if (!restored) {
+    el('login').classList.remove('hidden');
+  }
 }
 init().catch(function() {
   el('ls').classList.add('hidden');
@@ -1261,6 +1296,7 @@ window.doLogin = async function(t) {
   if (t === 'profe') {
     if (v('li-pp') !== PASS) { showErr('Contraseña incorrecta'); return; }
     S.modo = 'profe';
+    localStorage.setItem('hft-session', JSON.stringify({ modo: 'profe' }));
     el('login').classList.add('hidden');
     el('app').classList.remove('hidden');
     el('vdash').classList.remove('hidden');
@@ -1282,6 +1318,7 @@ window.doLogin = async function(t) {
     });
     if (!found) { showErr('RUT o contraseña incorrectos'); return; }
     S.modo = 'alumno'; S.uid = foundId; S.alumnos[foundId] = found;
+    localStorage.setItem('hft-session', JSON.stringify({ modo: 'alumno', uid: foundId }));
     el('login').classList.add('hidden');
     el('alumno-app').classList.remove('hidden');
     el('av-name').textContent = found.nombre;
@@ -1293,6 +1330,7 @@ function showErr(msg) { el('lerr').textContent = msg; el('lerr').classList.remov
 
 window.doLogout = function() {
   S.modo = null; S.uid = null; S.aid = null; S.alumnos = {};
+  localStorage.removeItem('hft-session');
   ['app','alumno-app'].forEach(function(id) { el(id).classList.add('hidden'); });
   el('login').classList.remove('hidden');
   ['li-pp','li-pa','li-rut'].forEach(function(id) { if(el(id)) el(id).value = ''; });
@@ -1336,10 +1374,12 @@ function renderSide() {
     var semLabel = semActualSide !== null ? 'S' + (semActualSide + 1) : '';
     var diaLabel = semLabel ? 'D' + diaActualSide + ' ' + semLabel : 'D' + diaActualSide;
     var indicador = '<span style="font-size:9px;color:var(--ac);background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-left:4px;font-family:monospace;">' + diaLabel + '</span>';
+    var noLeidos = a.mensajes ? Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length : 0;
+    var msgBadge = noLeidos > 0 ? '<span style="background:var(--rd);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;flex-shrink:0;margin-left:4px;">' + noLeidos + '</span>' : '';
     return '<div class="ai' + (S.aid === id ? ' on' : '') + '" onclick="selAl(\'' + id + '\')">' +
       '<div class="av">' + ini + '</div>' +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + a.nombre + '</span>' +
-      indicador + dot + '</div>';
+      msgBadge + indicador + dot + '</div>';
   }).join('');
 }
 
@@ -1399,8 +1439,8 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking') { renderEmpty(); return; }
-  if (S.view === 'dash')  rDash(a);
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash') { renderEmpty(); return; }
+  if (S.view === 'dash')  { if (a) rDash(a); else rDashGlobal(); }
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'eval')  rEval(a);
   if (S.view === 'msgs')  rMsgs(a);
@@ -1975,14 +2015,14 @@ function aplicarPlantilla(aid) {
 window.aplicarPlantilla = aplicarPlantilla;
 
 // EVALUACIONES
-function openEvalModal(idx) {
-  S.evalIdx = idx;
-  el('m-ev-t').textContent = idx != null ? 'Editar evaluacion' : 'Nueva evaluacion';
+function openEvalModal(key) {
+  S.evalKey = key || null;
+  el('m-ev-t').textContent = key ? 'Editar evaluacion' : 'Nueva evaluacion';
   var campos = ['f','p','h','g','pe','su','ax','tr','ab','sp','mp','bp','pa','pb','pm','pc'];
-  if (idx != null && A() && A().evaluaciones) {
-    var ev = Object.values(A().evaluaciones)[idx] || {};
+  if (key && A() && A().evaluaciones && A().evaluaciones[key]) {
+    var ev = A().evaluaciones[key];
     var map = {f:'fecha',p:'peso',h:'altura',g:'grasa',pe:'pectoral',su:'subescapular',ax:'axilar',tr:'triceps',ab:'abdominal',sp:'suprailiaco',mp:'muslopl',bp:'bicepspl',pa:'abdomen',pb:'brazo',pm:'muslo',pc:'cadera'};
-    campos.forEach(function(k) { if(el('ev-'+k) && ev[map[k]] != null) el('ev-'+k).value = ev[map[k]]; });
+    campos.forEach(function(k) { if(el('ev-'+k)) el('ev-'+k).value = ev[map[k]] != null ? ev[map[k]] : ''; });
   } else {
     campos.forEach(function(k) { if(el('ev-'+k)) el('ev-'+k).value = ''; });
     if(el('ev-f')) el('ev-f').value = new Date().toISOString().split('T')[0];
@@ -2005,14 +2045,28 @@ window.saveEval = async function() {
   var pls = [ev.pectoral,ev.subescapular,ev.axilar,ev.triceps,ev.abdominal,ev.suprailiaco,ev.muslopl,ev.bicepspl];
   var tot = pls.reduce(function(s,x) { return s + (x || 0); }, 0);
   ev.totalPl = tot > 0 ? parseFloat(tot.toFixed(1)) : null;
-  await FP('alumnos/' + S.aid + '/evaluaciones', ev);
+  if (S.evalKey) {
+    await FU('alumnos/' + S.aid + '/evaluaciones/' + S.evalKey, ev);
+  } else {
+    await FP('alumnos/' + S.aid + '/evaluaciones', ev);
+  }
+  S.evalKey = null;
   S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
   closeM('m-ev'); toast('Evaluacion guardada'); rEval(A());
 };
 
+window.deleteEval = async function(key) {
+  if (!confirm('Eliminar esta evaluacion? Esta accion no se puede deshacer.')) return;
+  await FR('alumnos/' + S.aid + '/evaluaciones/' + key);
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  toast('Evaluacion eliminada');
+  rEval(A());
+};
+
 function rEval(a) {
   var e = el('veval');
-  var evs = a.evaluaciones ? Object.values(a.evaluaciones).sort(function(a,b) { return a.fecha.localeCompare(b.fecha); }) : [];
+  var evsEntries = a.evaluaciones ? Object.entries(a.evaluaciones).sort(function(x,y) { return x[1].fecha.localeCompare(y[1].fecha); }) : [];
+  var evs = evsEntries.map(function(kv){ return kv[1]; });
   if (!evs.length) { e.innerHTML = '<div style="text-align:center;padding:60px;color:var(--tx3);">Sin evaluaciones aun</div>'; return; }
   var last = evs[evs.length-1], prev = evs.length > 1 ? evs[evs.length-2] : null;
   var INV = ['grasa','totalPl','pectoral','subescapular','axilar','triceps','abdominal','suprailiaco','muslopl','bicepspl','abdomen','cadera','imc'];
@@ -2063,7 +2117,8 @@ function rEval(a) {
     cmpHTML = '<div class="card"><div class="ch"><span class="ct">Comparacion ' + prev.fecha + ' → ' + last.fecha + '</span></div>' +
       '<table class="tbl"><thead><tr>' + ['Metrica','Anterior','Actual','Diferencia'].map(function(h2) { return '<th style="text-align:left;">' + h2 + '</th>'; }).join('') + '</tr></thead><tbody>' + rows2 + '</tbody></table></div>';
   }
-  var histRows = evs.map(function(ev2, i) {
+  var histRows = evsEntries.map(function(kv) {
+    var key = kv[0], ev2 = kv[1];
     return '<tr><td style="font-family:monospace;font-size:11px;color:var(--tx2);">' + ev2.fecha + '</td>' +
       '<td>' + (ev2.peso!=null?'<span class="badge bac">'+ev2.peso+'kg</span>':'—') + '</td>' +
       '<td>' + (ev2.imc!=null?ev2.imc:'—') + '</td>' +
@@ -2071,7 +2126,8 @@ function rEval(a) {
       '<td>' + (ev2.totalPl!=null?ev2.totalPl+'mm':'—') + '</td>' +
       '<td>' + (ev2.brazo!=null?ev2.brazo+'cm':'—') + '</td>' +
       '<td>' + (ev2.abdomen!=null?ev2.abdomen+'cm':'—') + '</td>' +
-      '<td><button class="ico" onclick="openEvalModal(' + i + ')">✎</button></td></tr>';
+      '<td style="white-space:nowrap;"><button class="ico" onclick="openEvalModal(\'' + key + '\')">✎</button>' +
+      '<button class="ico" onclick="deleteEval(\'' + key + '\')" style="color:var(--rd);">✕</button></td></tr>';
   }).join('');
   // Check inactivos
   var alertasInactivos = checkInactivos();
@@ -2144,6 +2200,16 @@ function rMsgs(a) {
     '<button class="btn bp sm" onclick="sendMsg()">Enviar</button>'+
     '</div></div>';
   setTimeout(function(){var c=document.getElementById('profe-chat');if(c)c.scrollTop=c.scrollHeight;},50);
+  if (a.mensajes) {
+    var pendientes = Object.entries(a.mensajes).filter(function(kv){ return kv[1].de === 'alumno' && !kv[1].leido; });
+    if (pendientes.length) {
+      pendientes.forEach(function(kv) {
+        FU('alumnos/' + S.aid + '/mensajes/' + kv[0], { leido: true });
+        a.mensajes[kv[0]].leido = true;
+      });
+      renderSide();
+    }
+  }
 }
 
 
@@ -2541,7 +2607,9 @@ function avResumen(a) {
     '<div>' +
     '<div style="font-family:monospace;font-size:10px;color:var(--ac);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Hoy entrenas</div>' +
     '<div style="font-size:24px;font-weight:700;color:var(--tx);margin-bottom:2px;">Dia ' + (diaHoy+1) + ' &nbsp;·&nbsp; Semana ' + (si+1) + '</div>' +
-    '<div style="font-size:11px;color:var(--tx2);">' + ejsHoy + ' ejercicios</div>' +
+    '<div style="font-size:11px;color:var(--tx2);">' + ejsHoy + ' ejercicios' +
+    (a.fecha_inicio ? ' &nbsp;·&nbsp; ' + Math.max(0, Math.floor((new Date() - new Date(a.fecha_inicio)) / 86400000)) + ' dias contigo' : '') +
+    '</div>' +
     '</div>' +
     '<button class="btn bp" onclick="avSet(\'pauta\')" style="padding:10px 18px;font-size:13px;">Empezar →</button>' +
     '</div>';
@@ -2618,8 +2686,8 @@ function avPauta(a) {
     var lockIcon = isActualDd ? '' : ' 🔒';
     dayTabs2 += '<button class="tab' + (isActualDd?' on':'') + '" style="' + lockStyle + '" onclick="avDia(' + dd + ')">Dia ' + (dd+1) + lockIcon + '</button>';
   }
-  // Semana actual indicator for alumno
-  var avSemIndicator = semAuto !== null ? '<div style="background:rgba(61,255,160,.08);border:1px solid rgba(61,255,160,.2);border-radius:var(--r);padding:6px 12px;margin-bottom:8px;font-size:11px;color:var(--ac);font-family:monospace,monospace;text-align:center;">Segun tu fecha de inicio, estas en S' + (semAuto+1) + '</div>' : '';
+  // Semana actual indicator for alumno (deshabilitado - confundia con progreso real)
+  var avSemIndicator = '';
   // Cardio inicio alumno
   var avCardioInicioHTML = av_cardioInicio ? '<div style="background:rgba(61,184,255,.08);border:1px solid rgba(61,184,255,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--bl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">⚡ Cardio Inicial</div>' +
@@ -2851,20 +2919,26 @@ function avRenderDia(a) {
 window.avEditPeso = async function(ejId, val) {
   var peso = parseFloat(val) || 0;
   var di = S.avdia;
+  var a = S.alumnos[S.uid];
+  var ejNombre = (a && a.dias_plan && a.dias_plan[di] && a.dias_plan[di].ejercicios && a.dias_plan[di].ejercicios[ejId]) ? a.dias_plan[di].ejercicios[ejId].nombre : 'ejercicio';
   await FU('alumnos/' + S.uid + '/dias_plan/' + di + '/ejercicios/' + ejId, {peso: peso});
-  if (S.alumnos[S.uid].dias_plan && S.alumnos[S.uid].dias_plan[di] && S.alumnos[S.uid].dias_plan[di].ejercicios && S.alumnos[S.uid].dias_plan[di].ejercicios[ejId]) {
-    S.alumnos[S.uid].dias_plan[di].ejercicios[ejId].peso = peso;
+  if (a.dias_plan && a.dias_plan[di] && a.dias_plan[di].ejercicios && a.dias_plan[di].ejercicios[ejId]) {
+    a.dias_plan[di].ejercicios[ejId].peso = peso;
   }
+  await FP('notificaciones', { tipo:'peso', alumno:a.nombre, alumnoId:S.uid, ejercicio:ejNombre, valor:peso+'kg', fecha:new Date().toISOString(), leida:false });
   toast('Peso actualizado');
 };
 
 window.avEditIntervalo = async function(ejId, val) {
   var intervalo = parseFloat(val) || 2.5;
   var di = S.avdia;
+  var a = S.alumnos[S.uid];
+  var ejNombre = (a && a.dias_plan && a.dias_plan[di] && a.dias_plan[di].ejercicios && a.dias_plan[di].ejercicios[ejId]) ? a.dias_plan[di].ejercicios[ejId].nombre : 'ejercicio';
   await FU('alumnos/' + S.uid + '/dias_plan/' + di + '/ejercicios/' + ejId, {intervalo: intervalo});
-  if (S.alumnos[S.uid].dias_plan && S.alumnos[S.uid].dias_plan[di] && S.alumnos[S.uid].dias_plan[di].ejercicios && S.alumnos[S.uid].dias_plan[di].ejercicios[ejId]) {
-    S.alumnos[S.uid].dias_plan[di].ejercicios[ejId].intervalo = intervalo;
+  if (a.dias_plan && a.dias_plan[di] && a.dias_plan[di].ejercicios && a.dias_plan[di].ejercicios[ejId]) {
+    a.dias_plan[di].ejercicios[ejId].intervalo = intervalo;
   }
+  await FP('notificaciones', { tipo:'intervalo', alumno:a.nombre, alumnoId:S.uid, ejercicio:ejNombre, valor:'intervalo '+intervalo+'kg', fecha:new Date().toISOString(), leida:false });
   toast('Intervalo actualizado');
 };
 
@@ -3649,10 +3723,10 @@ function avLogros(a) {
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;">';
   LOGROS_DEF.forEach(function(ldef) {
     var desbloqueado = !!logrosAct[ldef.id];
-    html += '<div style="background:var(--bg3);border:1px solid '+(desbloqueado?'var(--ac)':'var(--bd)')+';border-radius:10px;padding:10px;text-align:center;opacity:'+(desbloqueado?'1':'0.4')+';transition:.2s;">' +
-      '<div style="font-size:22px;margin-bottom:4px;">'+ldef.emoji+'</div>' +
-      '<div style="font-size:11px;font-weight:600;color:'+(desbloqueado?'var(--tx)':'var(--tx3)')+';">'+ldef.titulo+'</div>' +
-      '<div style="font-size:9px;color:var(--tx3);margin-top:2px;">'+ldef.desc+'</div>' +
+    html += '<div style="background:var(--bg3);border:1px solid '+(desbloqueado?'var(--ac)':'var(--bd)')+';border-radius:10px;padding:10px;text-align:center;opacity:'+(desbloqueado?'1':'0.55')+';transition:.2s;">' +
+      '<div style="font-size:22px;margin-bottom:4px;opacity:1;">'+ldef.emoji+'</div>' +
+      '<div style="font-size:11px;font-weight:600;color:'+(desbloqueado?'var(--tx)':'var(--tx2)')+';">'+ldef.titulo+'</div>' +
+      '<div style="font-size:9px;color:'+(desbloqueado?'var(--tx2)':'var(--tx3)')+';margin-top:2px;">'+ldef.desc+'</div>' +
       (ldef.creditos > 0 ? '<div style="font-size:10px;color:var(--ac);margin-top:3px;">+'+ldef.creditos+' cred.</div>' : '') +
       (desbloqueado && logrosAct[ldef.id].fecha ? '<div style="font-size:8px;color:var(--tx3);margin-top:3px;">'+logrosAct[ldef.id].fecha+'</div>' : '') +
       '</div>';
@@ -4399,6 +4473,130 @@ document.addEventListener('click', function(e) {
     calcularPago1Sugerido();
   }
 });
+
+// ── DASHBOARD GLOBAL (sin alumno seleccionado) ───────────────────────────────
+function rDashGlobal() {
+  var e = el('vdash');
+  if (!e) return;
+
+  var mensajesPendientes = [];
+  Object.entries(S.alumnos).forEach(function(kv) {
+    var id = kv[0], al = kv[1];
+    if (!al.mensajes) return;
+    var noLeidos = Object.values(al.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; });
+    if (noLeidos.length) mensajesPendientes.push({ id: id, nombre: al.nombre, cantidad: noLeidos.length, ultimo: noLeidos[noLeidos.length-1] });
+  });
+
+  var html = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Dashboard</span></div>' +
+    '<div id="dash-global-container"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando notificaciones...</div></div>';
+  e.innerHTML = html;
+
+  var msgHTML = '';
+  if (mensajesPendientes.length) {
+    msgHTML = '<div class="card" style="margin-bottom:12px;">' +
+      '<div class="ch"><span class="ct">Mensajes sin responder</span>' +
+      '<span style="background:var(--rd);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 8px;">' + mensajesPendientes.length + '</span></div><div>';
+    mensajesPendientes.forEach(function(mp) {
+      msgHTML += '<div onclick="selAl(\'' + mp.id + '\');setView(\'msgs\')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:500;">' + mp.nombre + '</div>' +
+        '<div style="font-size:11px;color:var(--tx2);">' + (mp.ultimo.texto||'').slice(0,60) + '</div>' +
+        '</div>' +
+        '<span style="background:var(--rd);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 8px;">' + mp.cantidad + '</span>' +
+        '</div>';
+    });
+    msgHTML += '</div></div>';
+  }
+
+  FG('notificaciones').then(function(snap) {
+    var container = document.getElementById('dash-global-container');
+    if (!container) return;
+    var notifs = snap ? Object.entries(snap) : [];
+
+    var canjes = notifs.filter(function(kv){ return kv[1].tipo === 'canje' && !kv[1].procesado; });
+    var encuestas = notifs.filter(function(kv){ return kv[1].tipo === 'encuesta'; })
+      .sort(function(a,b){ return (b[1].fecha||'').localeCompare(a[1].fecha||''); }).slice(0,5);
+    var pesos = notifs.filter(function(kv){ return kv[1].tipo === 'peso' || kv[1].tipo === 'intervalo'; })
+      .sort(function(a,b){ return (b[1].fecha||'').localeCompare(a[1].fecha||''); }).slice(0,8);
+
+    var html2 = msgHTML;
+
+    if (canjes.length) {
+      html2 += '<div class="card" style="margin-bottom:12px;border:1px solid rgba(255,184,48,.3);">' +
+        '<div class="ch"><span class="ct">Canjes pendientes</span>' +
+        '<span style="background:var(--am);color:var(--bg);font-size:10px;font-weight:700;border-radius:10px;padding:1px 8px;">' + canjes.length + '</span></div><div>';
+      canjes.forEach(function(kv) {
+        var id = kv[0], n = kv[1];
+        html2 += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:500;">' + n.alumno + '</div>' +
+          '<div style="font-size:11px;color:var(--tx2);">Quiere canjear: <b>' + n.premio + '</b></div>' +
+          '</div>' +
+          '<button class="btn bp sm" id="canje-confirm-' + id + '">Confirmar</button>' +
+          '</div>';
+      });
+      html2 += '</div></div>';
+    }
+
+    if (pesos.length) {
+      html2 += '<div class="card" style="margin-bottom:12px;">' +
+        '<div class="ch"><span class="ct">Pesos e intervalos sugeridos</span></div><div>';
+      pesos.forEach(function(kv) {
+        var n = kv[1];
+        html2 += '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div style="flex:1;font-size:12px;"><b>' + n.alumno + '</b> - ' + n.ejercicio + '</div>' +
+          '<span style="font-size:12px;font-weight:600;color:var(--ac);">' + n.valor + '</span>' +
+          '</div>';
+      });
+      html2 += '</div></div>';
+    }
+
+    if (encuestas.length) {
+      html2 += '<div class="card" style="margin-bottom:12px;">' +
+        '<div class="ch"><span class="ct">Encuestas recientes</span></div><div>';
+      encuestas.forEach(function(kv) {
+        var n = kv[1];
+        var d = n.data || {};
+        html2 += '<div style="padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">' +
+          '<span style="font-size:12px;font-weight:500;">' + (n.alumno||'') + '</span>' +
+          '<span style="font-size:10px;color:var(--tx3);">' + (d.fecha||'') + '</span>' +
+          (d.sentiste ? '<span style="font-size:11px;color:var(--ac);background:var(--ac2);border-radius:4px;padding:1px 6px;">' + d.sentiste + '</span>' : '') +
+          '</div>' +
+          (d.ejercicio ? '<div style="font-size:11px;color:var(--tx2);">Le costo: ' + d.ejercicio + '</div>' : '') +
+          (d.comentario ? '<div style="font-size:11px;color:var(--tx2);font-style:italic;">"' + d.comentario + '"</div>' : '') +
+          '</div>';
+      });
+      html2 += '</div></div>';
+    }
+
+    if (!msgHTML && !canjes.length && !pesos.length && !encuestas.length) {
+      html2 = '<div class="card"><div style="padding:30px;text-align:center;color:var(--tx3);font-size:12px;">Todo al dia. Sin notificaciones pendientes.</div></div>';
+    }
+
+    container.innerHTML = html2;
+
+    canjes.forEach(function(kv) {
+      var id = kv[0], n = kv[1];
+      var btn = document.getElementById('canje-confirm-' + id);
+      if (btn) btn.onclick = function() { procesarCanjeGlobal(id, n); };
+    });
+  });
+}
+
+window.procesarCanjeGlobal = async function(notiId, n) {
+  if (!confirm('Confirmar canje de ' + n.premio + ' para ' + n.alumno + '?')) return;
+  await FU('notificaciones/' + notiId, { procesado: true, fecha_proceso: new Date().toISOString() });
+  var alumnoId = Object.keys(S.alumnos).find(function(k){ return S.alumnos[k].nombre === n.alumno; });
+  if (alumnoId) {
+    await FP('alumnos/' + alumnoId + '/mensajes', {
+      texto: 'Canje aprobado! Tu ' + n.premio + ' esta listo. Coordinamos la entrega.',
+      fecha: new Date().toISOString(), de: 'profe', leido: false
+    });
+  }
+  toast('Canje confirmado y alumno notificado');
+  rDashGlobal();
+};
 </script>
 </body>
 </html>
