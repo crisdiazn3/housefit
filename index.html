@@ -345,6 +345,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <div class="nsl">Vistas</div>
         <button class="nb on" onclick="setView('dash',this)"><div class="nd"></div>Dashboard</button>
         <button class="nb" onclick="setView('pauta',this)"><div class="nd"></div>Pauta</button>
+        <button class="nb" onclick="setView('cardio',this)"><div class="nd"></div>Cardio</button>
         <button class="nb" onclick="setView('eval',this)"><div class="nd"></div>Evaluaciones</button>
         <button class="nb" onclick="setView('msgs',this)"><div class="nd"></div>Mensajes</button>
         <button class="nb" onclick="setView('pagos',this)"><div class="nd"></div>Pagos <span id="npagos" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
@@ -378,6 +379,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     </div>
     <div class="content" id="vdash"></div>
     <div class="content hidden" id="vpauta"></div>
+    <div class="content hidden" id="vcardio"></div>
     <div class="content hidden" id="veval"></div>
     <div class="content hidden" id="vmsgs"></div>
     <div class="content hidden" id="vpagos"></div>
@@ -880,7 +882,7 @@ const BLIB_BASE=[{"n": "Biceps Banco 45", "m": "BÍCEPS", "l": "https://youtube.
 const S = {
   modo: null, uid: null, aid: null,
   alumnos: {}, bibx: [],
-  view: 'dash', dia: 0, sem: 0,
+  view: 'dash', dia: 0, sem: 0, diaCardio: 0,
   avv: 'resumen', avdia: 0, avsem: 0,
   editId: null, ejCtx: null, cargaCtx: null,
   theme: localStorage.getItem('hft-t') || 'dark'
@@ -1494,6 +1496,7 @@ function renderAll() {
   if (a) {
     if (S.view === 'pauta') {
       abtn('+ Ejercicio', 'bp', function() { openEjModal(S.aid, S.dia); });
+      abtn('Agrupar seleccionados', 'bg', function() { agruparSeleccionados(); });
       abtn('Archivar plan', 'bg', function() { archivarPlan(S.aid); });
       abtn('Guardar plantilla', 'bg', function() { guardarPlantilla(S.aid); });
       abtn('Aplicar plantilla', 'bg', function() { aplicarPlantilla(S.aid); });
@@ -1514,6 +1517,7 @@ function renderAll() {
   if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash') { renderEmpty(); return; }
   if (S.view === 'dash')  { if (a) rDash(a); else rDashGlobal(); }
   if (S.view === 'pauta') rPauta(a);
+  if (S.view === 'cardio') rCardio(a);
   if (S.view === 'eval')  rEval(a);
   if (S.view === 'msgs')  rMsgs(a);
   if (S.view === 'pagos') rPagos();
@@ -1694,7 +1698,7 @@ function rPauta(a) {
   rDiaProfe(a);
 }
 window.selSem = function(i) { S.sem = i; rPauta(A()); };
-window.selDia = function(i) { S.dia = i; rPauta(A()); };
+window.selDia = function(i) { S.dia = i; S._selectedEjs = new Set(); rPauta(A()); };
 
 function rDiaProfe(a) {
   var e = el('dia-c');
@@ -1786,6 +1790,7 @@ function rDiaProfe(a) {
         '<table class="tbl" style="min-width:680px;">' +
         '<thead style="background:var(--bg3);"><tr>' +
         '<th style="width:24px;"></th>' +
+        '<th style="width:24px;"></th>' +
         '<th style="text-align:left;">Ejercicio</th>' +
         '<th>Video</th><th>Ser</th><th>Reps</th><th>Peso</th><th>Interv/Aj</th><th>Desc</th>' +
         '<th style="min-width:140px;">Obs</th>' +
@@ -1824,6 +1829,7 @@ function rDiaProfe(a) {
         var descTxt = ej.descanso ? ('<span style="font-family:monospace;font-size:11px;color:var(--bl);">' + ej.descanso + 's</span>') : '—';
         h += '<tr draggable="true" data-ejid="' + ejId + '" ondragstart="dragEjStart(event,\'' + ejId + '\')" ondragover="dragEjOver(event)" ondrop="dragEjDrop(event,\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\')" ondragend="dragEjEnd(event)">' +
           '<td style="cursor:grab;text-align:center;color:var(--tx3);font-size:14px;user-select:none;" title="Arrastra para reordenar">⋮⋮</td>' +
+          '<td style="text-align:center;"><input type="checkbox" class="ej-select-cb" data-ejid="' + ejId + '" onchange="toggleEjSelect(\'' + ejId + '\',this.checked)" ' + (S._selectedEjs && S._selectedEjs.has(ejId) ? 'checked' : '') + '></td>' +
           '<td><div style="font-weight:600;font-size:13px;">' + ej.nombre + '</div><div style="font-size:9px;color:var(--tx3);font-family:monospace;">' + ej.musculo + '</div></td>' +
           '<td style="text-align:center;">' + (ej.link ? '<a class="vb" href="' + ej.link + '" target="_blank">▶</a>' : '—') + '</td>' +
           '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.series + (isD ? '<span style="font-size:9px;color:var(--am);"> -40%</span>' : '') + '</td>' +
@@ -2690,8 +2696,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
+var AVV = ['resumen','pauta','cardio','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
+var AVL = ['Resumen','Mi Pauta','Mi Cardio','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2720,6 +2726,7 @@ function renderAV() {
   if (S.avv === 'lesiones')    avLesiones(a);
   if (S.avv === 'beneficios')  avBeneficios(a);
   if (S.avv === 'creditos')   avCreditos(a);
+  if (S.avv === 'cardio')  avCardio(a);
   if (S.avv === 'nutricion')  avNutricion(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
@@ -2979,10 +2986,6 @@ function avRenderDia(a) {
     function mkAvTable(ejList, titulo2) {
       var h = '';
       if (titulo2) h += '<div class="bsg' + (ejList.length>=3?' tri':'') + '"><div class="bslb">' + titulo2 + '</div>';
-      h += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);overflow-x:auto;margin-bottom:8px;">' +
-        '<table class="tbl" style="min-width:480px;"><thead><tr>' +
-        '<th style="text-align:left;">Ejercicio</th><th>Video</th><th>Ser</th><th>Reps</th><th>Peso</th>' +
-        (isD?'':'<th>Perc S'+(si+1)+'</th>') + '</tr></thead><tbody>';
       ejList.forEach(function(kv) {
         var ejId=kv[0],ej=kv[1];
         var cs=calcSem(ej,si,a,S.avdia);
@@ -2993,40 +2996,59 @@ function avRenderDia(a) {
         }
         if (mol.dr !== 0) cs.reps = Math.max(1, cs.reps + mol.dr);
         var perc=(ej.perc&&ej.perc[si]!=null)?ej.perc[si]:null;
-        var percH = '';
-        if (!isD) {
-          var pbts2 = '';
-          for (var vv=1;vv<=5;vv++) {
-            pbts2 += '<div class="pb' + (perc===vv?' '+PC[vv]:'') + '" onclick="avSetP(\'' + ejId + '\',' + si + ',' + vv + ')" style="min-width:28px;padding:3px 2px;font-size:8px;"><span class="pn" style="font-size:12px;">' + vv + '</span></div>';
-          }
-          percH = '<td style="text-align:center;"><div class="prow">' + pbts2 + '</div>' + (perc?'<div style="font-size:9px;color:var(--tx2);margin-top:2px;">✓ ' + PL[perc] + '</div>':'') + '</td>';
-        }
-        h += '<tr>' +
-          '<td><div style="font-weight:600;">' + ej.nombre + '</div>' +
+        var desc2 = ej.descanso || 60;
+
+        h += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;">';
+
+        // Encabezado: nombre + musculo + obs
+        h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;">' +
+          '<div><div style="font-weight:600;font-size:14px;">' + ej.nombre + '</div>' +
           '<div style="font-size:10px;color:var(--tx3);font-family:monospace;">' + ej.musculo + '</div>' +
-          (ej.obs?'<div style="font-size:10px;color:var(--tx2);font-style:italic;">' + ej.obs.slice(0,50) + (ej.obs.length>50?'...':'') + '</div>':'') + '</td>' +
-          '<td style="text-align:center;">' + (ej.link?'<a class="vb" href="'+ej.link+'" target="_blank">▶</a>':'—') + '</td>' +
-          '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.series + (isD?'<span style="font-size:9px;color:var(--am);"> -40%</span>':'') + '</td>' +
-          '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.reps + '</td>' +
-          '<td style="text-align:center;font-family:monospace;font-weight:500;color:var(--am);">' + (cs.peso===0?'Corporal':cs.peso+'kg') + (function(){
-      var desc2 = ej.descanso || 60;
-      return '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">' +
-        '<div style="font-size:9px;color:var(--bl);">⏱ '+desc2+'s</div>' +
-        '<button onclick="startTimer('+desc2+')" style="font-size:9px;padding:1px 7px;background:var(--bl);color:#fff;border:none;border-radius:4px;cursor:pointer;">Iniciar</button>' +
-        '</div>';
-    })() + (si===0?'<div style="margin-top:5px;"><div style="font-size:8px;color:var(--tx3);margin-bottom:2px;">Editar peso S1:</div><input type="number" min="0" step="0.5" value="'+cs.peso+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--am);text-align:center;" onchange="avEditPeso(\''+ejId+'\',this.value)"><div style="font-size:8px;color:var(--tx3);margin-top:3px;margin-bottom:2px;">Intervalo kg:</div><input type="number" min="0" step="0.5" value="'+(ej.intervalo||2.5)+'" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:4px;padding:2px 4px;font-size:10px;color:var(--bl);text-align:center;" onchange="avEditIntervalo(\''+ejId+'\',this.value)"></div>':'') + '</td>' +
-          percH +
-          '</tr>';
-        if (si > 0) {
-          h += '<tr><td colspan="6" style="padding:3px 9px;border-bottom:1px solid var(--bd);">' +
-            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+          (ej.obs?'<div style="font-size:10px;color:var(--tx2);font-style:italic;margin-top:2px;">' + ej.obs.slice(0,80) + (ej.obs.length>80?'...':'') + '</div>':'') + '</div>' +
+          (ej.link?'<a class="vb" href="'+ej.link+'" target="_blank" style="flex-shrink:0;">▶</a>':'') +
+          '</div>';
+
+        // Series / Reps / Peso en fila compacta
+        h += '<div style="display:flex;gap:16px;margin-bottom:8px;">' +
+          '<div><div style="font-size:9px;color:var(--tx3);">SERIES</div><div style="font-family:monospace;font-weight:600;font-size:14px;">' + cs.series + (isD?'<span style="font-size:9px;color:var(--am);"> -40%</span>':'') + '</div></div>' +
+          '<div><div style="font-size:9px;color:var(--tx3);">REPS</div><div style="font-family:monospace;font-weight:600;font-size:14px;">' + cs.reps + '</div></div>' +
+          '<div><div style="font-size:9px;color:var(--tx3);">PESO</div><div style="font-family:monospace;font-weight:600;font-size:14px;color:var(--am);">' + (cs.peso===0?'Corporal':cs.peso+'kg') + '</div></div>' +
+          '</div>';
+
+        // Descanso + timer
+        h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+          '<div style="font-size:10px;color:var(--bl);">⏱ '+desc2+'s descanso</div>' +
+          '<button onclick="startTimer('+desc2+')" style="font-size:10px;padding:3px 10px;background:var(--bl);color:#fff;border:none;border-radius:5px;cursor:pointer;">Iniciar</button>' +
+          '</div>';
+
+        // Editar peso / intervalo (solo semana 1) o proponer ajuste (semanas siguientes)
+        if (si === 0) {
+          h += '<div style="display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd);">' +
+            '<div><div style="font-size:9px;color:var(--tx3);margin-bottom:2px;">Editar peso S1</div>' +
+            '<input type="number" min="0" step="0.5" value="'+cs.peso+'" style="width:70px;background:var(--bg3);border:1px solid var(--bd2);border-radius:5px;padding:5px 6px;font-size:12px;color:var(--am);text-align:center;" onchange="avEditPeso(\''+ejId+'\',this.value)"></div>' +
+            '<div><div style="font-size:9px;color:var(--tx3);margin-bottom:2px;">Intervalo kg</div>' +
+            '<input type="number" min="0" step="0.5" value="'+(ej.intervalo||2.5)+'" style="width:70px;background:var(--bg3);border:1px solid var(--bd2);border-radius:5px;padding:5px 6px;font-size:12px;color:var(--bl);text-align:center;" onchange="avEditIntervalo(\''+ejId+'\',this.value)"></div>' +
+            '</div>';
+        } else {
+          h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd);">' +
             '<span style="font-size:10px;color:var(--tx3);">Proponer ajuste peso:</span>' +
-            '<input type="number" min="0" step="0.5" value="' + cs.peso + '" style="width:56px;background:var(--bg3);border:1px solid var(--bd2);border-radius:5px;padding:2px 5px;font-size:11px;color:var(--am);text-align:center;" id="pp-' + ejId + '">' +
-            '<button class="btn bg sm" style="padding:3px 8px;font-size:10px;" onclick="avPropPeso(\'' + ejId + '\',' + si + ',\'' + ej.nombre + '\',' + cs.peso + ')">Enviar al profe</button>' +
-            '</div></td></tr>';
+            '<input type="number" min="0" step="0.5" value="' + cs.peso + '" style="width:60px;background:var(--bg3);border:1px solid var(--bd2);border-radius:5px;padding:4px 6px;font-size:12px;color:var(--am);text-align:center;" id="pp-' + ejId + '">' +
+            '<button class="btn bg sm" style="padding:4px 10px;font-size:11px;" onclick="avPropPeso(\'' + ejId + '\',' + si + ',\'' + ej.nombre + '\',' + cs.peso + ')">Enviar al profe</button>' +
+            '</div>';
         }
+
+        // Percepcion — siempre abajo, full width, facil de tocar sin scroll
+        if (!isD) {
+          h += '<div style="font-size:9px;color:var(--tx3);margin-bottom:5px;">PERCEPCION S' + (si+1) + '</div>' +
+            '<div class="prow" style="display:flex;gap:6px;">';
+          for (var vv=1; vv<=5; vv++) {
+            h += '<div class="pb' + (perc===vv?' '+PC[vv]:'') + '" onclick="avSetP(\'' + ejId + '\',' + si + ',' + vv + ')" style="flex:1;padding:10px 2px;text-align:center;"><span class="pn" style="font-size:15px;">' + vv + '</span></div>';
+          }
+          h += '</div>' + (perc?'<div style="font-size:10px;color:var(--tx2);margin-top:4px;">✓ ' + PL[perc] + '</div>':'');
+        }
+
+        h += '</div>';
       });
-      h += '</tbody></table></div>';
       if (titulo2) h += '</div>';
       return h;
     }
@@ -4904,6 +4926,9 @@ window.toggleSidebar = function() {
     if (S.modo !== 'alumno') return;
     var contentEl = document.getElementById('av-content');
     if (!contentEl || !contentEl.contains(e.target)) return;
+    var tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'BUTTON' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'A') return;
+    if (e.target.closest && e.target.closest('.prow, .pb, input, button, select, textarea, a')) return;
     var dx = e.changedTouches[0].clientX - touchStartX;
     var dy = e.changedTouches[0].clientY - touchStartY;
     if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.5) return;
@@ -4973,6 +4998,192 @@ window.dragEjDrop = async function(ev, aid, di, targetEjId) {
   toast('Orden actualizado');
   rPauta(A());
   _dragEjId = null;
+};
+
+// ── CARDIO ────────────────────────────────────────────────────────────────────
+var CARDIO_DEPORTES = ['Tenis','Futbol','Basquetbol','Padel','Otro deporte'];
+var CARDIO_TRADICIONAL = ['Trote','Caminata','Caminata inclinada','Bicicleta','Eliptica','Escaladora','Remo','Natacion','Cerro'];
+
+function rCardio(a) {
+  var e = el('vcardio');
+  if (!e || !a) return;
+  var dayTabsC = '';
+  for (var d = 0; d < DIAS; d++) {
+    dayTabsC += '<button class="tab' + (d === S.diaCardio ? ' on' : '') + '" onclick="selDiaCardio(' + d + ')">Dia ' + (d + 1) + '</button>';
+  }
+  var c = (a.cardio_semana && a.cardio_semana[S.diaCardio]) ? a.cardio_semana[S.diaCardio] : {};
+  var esDeporte = CARDIO_DEPORTES.indexOf(c.tipo) > -1;
+
+  var opciones = CARDIO_TRADICIONAL.concat(CARDIO_DEPORTES).map(function(t) {
+    return '<option value="' + t + '"' + (c.tipo === t ? ' selected' : '') + '>' + t + '</option>';
+  }).join('');
+
+  e.innerHTML = '<div class="tabs">' + dayTabsC + '</div>' +
+    '<div class="card" style="max-width:520px;margin-top:12px;"><div class="ch"><span class="ct">Cardio - Dia ' + (S.diaCardio+1) + '</span></div>' +
+    '<div style="padding:14px;">' +
+    '<div class="fg" style="margin-bottom:10px;"><label class="fl">Tipo de actividad</label>' +
+    '<select class="fs" id="c-tipo" onchange="toggleCardioFields()"><option value="">-- Selecciona --</option>' + opciones + '</select></div>' +
+
+    '<div id="c-campos-comunes" class="g2" style="margin-bottom:10px;">' +
+    '<div class="fg"><label class="fl">Duracion (min)</label><input class="fi" id="c-dur" type="number" value="' + (c.duracion||'') + '"></div>' +
+    '<div class="fg" id="c-zona-wrap"><label class="fl">Zona (1-5)</label><input class="fi" id="c-zona" value="' + (c.zona||'') + '" placeholder="Ej: Zona 2"></div>' +
+    '</div>' +
+
+    '<div id="c-campos-inclinada" class="g2" style="margin-bottom:10px;">' +
+    '<div class="fg"><label class="fl">Inclinacion (%)</label><input class="fi" id="c-inclinacion" type="number" value="' + (c.inclinacion||'') + '"></div>' +
+    '<div class="fg"><label class="fl">Velocidad (km/h)</label><input class="fi" id="c-velocidad" type="number" step="0.1" value="' + (c.velocidad||'') + '"></div>' +
+    '</div>' +
+
+    '<div id="c-campos-deporte" class="fg" style="margin-bottom:10px;">' +
+    '<label class="fl">Intensidad percibida</label>' +
+    '<select class="fs" id="c-intensidad">' +
+    ['Baja','Media','Alta'].map(function(op){ return '<option' + (c.intensidad===op?' selected':'') + '>' + op + '</option>'; }).join('') +
+    '</select></div>' +
+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);margin-bottom:10px;cursor:pointer;">' +
+    '<input type="checkbox" id="c-hiit" ' + (c.modalidad==='hiit'?'checked':'') + ' onchange="toggleCardioFields()"> Es HIIT (intervalos)</label>' +
+
+    '<div id="c-campos-hiit" class="g2" style="margin-bottom:10px;">' +
+    '<div class="fg"><label class="fl">Trabajo: min + intensidad</label>' +
+    '<div style="display:flex;gap:6px;"><input class="fi" id="c-hiit-trab-min" type="number" step="0.5" value="' + (c.hiit_trabajo_min||'') + '" style="width:60px;"><input class="fi" id="c-hiit-trab-int" value="' + (c.hiit_trabajo_intensidad||'') + '" placeholder="Ej: 80%"></div></div>' +
+    '<div class="fg"><label class="fl">Descanso: min + intensidad</label>' +
+    '<div style="display:flex;gap:6px;"><input class="fi" id="c-hiit-desc-min" type="number" step="0.5" value="' + (c.hiit_descanso_min||'') + '" style="width:60px;"><input class="fi" id="c-hiit-desc-int" value="' + (c.hiit_descanso_intensidad||'') + '" placeholder="Ej: suave"></div></div>' +
+    '<div class="fg"><label class="fl">N de rondas</label><input class="fi" id="c-hiit-rondas" type="number" value="' + (c.hiit_rondas||'') + '"></div>' +
+    '</div>' +
+
+    '<div class="fg" style="margin-bottom:12px;"><label class="fl">Notas</label>' +
+    '<textarea class="fta" id="c-notas" style="min-height:50px;">' + (c.notas||'') + '</textarea></div>' +
+
+    '<button class="btn bp sm" onclick="guardarCardio()">Guardar cardio del dia</button>' +
+    '</div></div>';
+
+  window.selDiaCardio = function(d) { S.diaCardio = d; rCardio(A()); };
+  setTimeout(function() { toggleCardioFields(); }, 0);
+}
+
+window.toggleCardioFields = function() {
+  var tipo = el('c-tipo') ? el('c-tipo').value : '';
+  var esDeporte = CARDIO_DEPORTES.indexOf(tipo) > -1;
+  var esInclinada = tipo === 'Caminata inclinada';
+  var esHiit = el('c-hiit') ? el('c-hiit').checked : false;
+
+  var comunes = el('c-campos-comunes');
+  var inclinada = el('c-campos-inclinada');
+  var deporte = el('c-campos-deporte');
+  var hiit = el('c-campos-hiit');
+  var zonaWrap = el('c-zona-wrap');
+
+  if (comunes) comunes.style.display = esDeporte ? 'none' : 'grid';
+  if (inclinada) inclinada.style.display = esInclinada ? 'grid' : 'none';
+  if (deporte) deporte.style.display = esDeporte ? 'block' : 'none';
+  if (hiit) hiit.style.display = (esHiit && !esDeporte) ? 'grid' : 'none';
+  if (zonaWrap) zonaWrap.style.display = esHiit ? 'none' : 'block';
+};
+
+window.guardarCardio = async function() {
+  if (!S.aid) return;
+  var tipo = el('c-tipo') ? el('c-tipo').value : '';
+  if (!tipo) { toast('Selecciona un tipo de actividad', 'err'); return; }
+  var esHiit = el('c-hiit') ? el('c-hiit').checked : false;
+  var cardio = {
+    tipo: tipo,
+    modalidad: esHiit ? 'hiit' : (CARDIO_DEPORTES.indexOf(tipo) > -1 ? 'deporte' : 'continuo'),
+    duracion: parseInt(el('c-dur') ? el('c-dur').value : 0) || null,
+    zona: el('c-zona') ? el('c-zona').value.trim() : '',
+    inclinacion: parseFloat(el('c-inclinacion') ? el('c-inclinacion').value : 0) || null,
+    velocidad: parseFloat(el('c-velocidad') ? el('c-velocidad').value : 0) || null,
+    intensidad: el('c-intensidad') ? el('c-intensidad').value : '',
+    hiit_trabajo_min: parseFloat(el('c-hiit-trab-min') ? el('c-hiit-trab-min').value : 0) || null,
+    hiit_trabajo_intensidad: el('c-hiit-trab-int') ? el('c-hiit-trab-int').value.trim() : '',
+    hiit_descanso_min: parseFloat(el('c-hiit-desc-min') ? el('c-hiit-desc-min').value : 0) || null,
+    hiit_descanso_intensidad: el('c-hiit-desc-int') ? el('c-hiit-desc-int').value.trim() : '',
+    hiit_rondas: parseInt(el('c-hiit-rondas') ? el('c-hiit-rondas').value : 0) || null,
+    notas: el('c-notas') ? el('c-notas').value.trim() : ''
+  };
+  try {
+    await FU('alumnos/' + S.aid + '/cardio_semana/' + S.diaCardio, cardio);
+    S.alumnos[S.aid].cardio_semana = S.alumnos[S.aid].cardio_semana || {};
+    S.alumnos[S.aid].cardio_semana[S.diaCardio] = cardio;
+    toast('Cardio guardado');
+  } catch (err) {
+    toast('Error al guardar: ' + (err.message||'revisa la consola'), 'err');
+  }
+};
+
+// ── VISTA ALUMNO: MI CARDIO ──────────────────────────────────────────────────
+function avCardio(a) {
+  var e = el('av-content');
+  if (!e) return;
+  var cs2 = a.cardio_semana || {};
+  var dias2 = Object.keys(cs2).map(Number).sort(function(x,y){return x-y;});
+  if (!dias2.length) {
+    e.innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">Sin cardio asignado</div>' +
+      '<div style="font-size:12px;color:var(--tx2);">Tu entrenador aun no ha cargado tu plan de cardio.</div></div>';
+    return;
+  }
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">';
+  dias2.forEach(function(d) {
+    var c = cs2[d];
+    if (!c || !c.tipo) return;
+    var esDeporte = CARDIO_DEPORTES.indexOf(c.tipo) > -1;
+    var linea2 = '';
+    if (c.modalidad === 'hiit') {
+      linea2 = 'Trabajo ' + (c.hiit_trabajo_min||'?') + 'min ' + (c.hiit_trabajo_intensidad||'') + ' / Descanso ' + (c.hiit_descanso_min||'?') + 'min ' + (c.hiit_descanso_intensidad||'') + (c.hiit_rondas ? ' x' + c.hiit_rondas + ' rondas' : '');
+    } else if (esDeporte) {
+      linea2 = (c.duracion||'?') + ' min - Intensidad ' + (c.intensidad||'-');
+    } else if (c.tipo === 'Caminata inclinada') {
+      linea2 = (c.duracion||'?') + ' min - ' + (c.inclinacion||'0') + '% - ' + (c.velocidad||'0') + ' km/h';
+    } else {
+      linea2 = (c.duracion||'?') + ' min' + (c.zona ? ' - ' + c.zona : '');
+    }
+    html += '<div class="card" style="padding:12px;">' +
+      '<div style="font-size:10px;color:var(--tx3);">Dia ' + (d+1) + '</div>' +
+      '<div style="font-weight:600;font-size:14px;margin:4px 0;">' + c.tipo + '</div>' +
+      '<div style="font-size:11px;color:var(--tx2);">' + linea2 + '</div>' +
+      (c.notas ? '<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-style:italic;">' + c.notas + '</div>' : '') +
+      '</div>';
+  });
+  html += '</div>';
+  e.innerHTML = html;
+}
+
+// ── AGRUPAR EJERCICIOS SELECCIONADOS (superserie) ────────────────────────────
+window.toggleEjSelect = function(ejId, checked) {
+  if (!S._selectedEjs) S._selectedEjs = new Set();
+  if (checked) S._selectedEjs.add(ejId);
+  else S._selectedEjs.delete(ejId);
+};
+
+window.agruparSeleccionados = async function() {
+  var sel = S._selectedEjs ? Array.from(S._selectedEjs) : [];
+  if (sel.length < 2) { toast('Selecciona al menos 2 ejercicios (casilla junto al asa)', 'err'); return; }
+  if (sel.length > 4) { toast('Maximo 4 ejercicios por grupo (circuito)', 'err'); return; }
+
+  var a = S.alumnos[S.aid];
+  var dplan = (S._ciclo === 'siguiente' && a.dias_plan_siguiente) ? a.dias_plan_siguiente : a.dias_plan;
+  var dia = dplan && dplan[S.dia];
+  if (!dia || !dia.ejercicios) return;
+
+  // Encontrar la siguiente letra de grupo disponible (A, B, C...)
+  var gruposUsados = new Set();
+  Object.values(dia.ejercicios).forEach(function(ej) { if (ej.grupo) gruposUsados.add(ej.grupo); });
+  var letras = 'ABCDEFGHIJ';
+  var letraNueva = 'A';
+  for (var i = 0; i < letras.length; i++) {
+    if (!gruposUsados.has(letras[i])) { letraNueva = letras[i]; break; }
+  }
+
+  if (!confirm('Agrupar ' + sel.length + ' ejercicios en superserie/grupo ' + letraNueva + '?')) return;
+
+  for (var j = 0; j < sel.length; j++) {
+    await FU(getDplanPath(S.aid) + '/' + S.dia + '/ejercicios/' + sel[j], { grupo: letraNueva });
+  }
+
+  S._selectedEjs = new Set();
+  S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
+  toast('Ejercicios agrupados en ' + letraNueva);
+  rPauta(A());
 };
 </script>
 </body>
