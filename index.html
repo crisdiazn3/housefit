@@ -1827,7 +1827,7 @@ function rDiaProfe(a) {
           '<td><textarea class="fta" style="min-height:28px;font-size:10px;padding:3px 6px;" onchange="updEj(\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\',\'obs\',this.value)">' + (ej.obs || '') + '</textarea></td>' +
           percHTML +
           '<td style="text-align:center;"><span style="color:' + trend.col + ';">' + trend.ic + '</span></td>' +
-          '<td style="text-align:center;">' + (si === 0 ? '<button class="ico del" onclick="delEj(\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\')">✕</button>' : '') + '</td>' +
+          '<td style="text-align:center;white-space:nowrap;">' + (si === 0 ? '<button class="ico" onclick="openEditEjModal(\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\')">✏️</button><button class="ico del" onclick="delEj(\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\')">✕</button>' : '') + '</td>' +
           '</tr>';
       });
       h += '</tbody></table></div>';
@@ -1882,7 +1882,10 @@ function openEjModal(aid, di) {
 }
 window.openEjModal = openEjModal;
 
-function openEditEjModal(aid, di, ejId, ej) {
+function openEditEjModal(aid, di, ejId) {
+  var a = S.alumnos[aid];
+  var dplan = (S._ciclo === 'siguiente' && a.dias_plan_siguiente) ? a.dias_plan_siguiente : a.dias_plan;
+  var ej = (dplan && dplan[di] && dplan[di].ejercicios && dplan[di].ejercicios[ejId]) || {};
   var e = document.getElementById;
   el('edit-ej-id').value = ejId;
   el('edit-ej-di').value = di;
@@ -1918,7 +1921,7 @@ window.saveEditEj = async function() {
     obs:      el('edit-ob').value.trim()
   };
   if (!updates.nombre) { toast('Nombre obligatorio','err'); return; }
-  await FU('alumnos/' + aid + '/dias_plan/' + di + '/ejercicios/' + ejId, updates);
+  await FU(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId, updates);
   S.alumnos[aid] = await FG('alumnos/' + aid);
   closeM('m-edit-ej');
   toast('Ejercicio actualizado');
@@ -1949,16 +1952,18 @@ window.saveEj = async function() {
 
 window.delEj = async function(aid, di, ejId) {
   if (!confirm('Eliminar ejercicio?')) return;
-  await FR('alumnos/' + aid + '/dias_plan/' + di + '/ejercicios/' + ejId);
+  await FR(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId);
   S.alumnos[aid] = await FG('alumnos/' + aid);
   toast('Eliminado'); rPauta(A());
 };
 
 window.updEj = async function(aid, di, ejId, k, val) {
   var v2 = (k === 'series' || k === 'reps') ? (parseInt(val) || 0) : (k === 'peso' || k === 'intervalo') ? (parseFloat(val) || 0) : val;
-  await FU('alumnos/' + aid + '/dias_plan/' + di + '/ejercicios/' + ejId, { [k]: v2 });
-  if (S.alumnos[aid] && S.alumnos[aid].dias_plan && S.alumnos[aid].dias_plan[di] && S.alumnos[aid].dias_plan[di].ejercicios && S.alumnos[aid].dias_plan[di].ejercicios[ejId]) {
-    S.alumnos[aid].dias_plan[di].ejercicios[ejId][k] = v2;
+  await FU(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId, { [k]: v2 });
+  var a2 = S.alumnos[aid];
+  var dplan2 = (S._ciclo === 'siguiente' && a2.dias_plan_siguiente) ? a2.dias_plan_siguiente : a2.dias_plan;
+  if (a2 && dplan2 && dplan2[di] && dplan2[di].ejercicios && dplan2[di].ejercicios[ejId]) {
+    dplan2[di].ejercicios[ejId][k] = v2;
   }
 };
 
@@ -2758,6 +2763,54 @@ function avResumen(a) {
         '</tr>';
     });
     html += '</tbody></table></div>';
+
+    // Series por grupo muscular
+    var seriesPorMusculo = {};
+    Object.values(diaData.ejercicios).forEach(function(ej) {
+      var cs2 = calcSem(ej, si, a, diaHoy);
+      var m = ej.musculo || 'OTRO';
+      seriesPorMusculo[m] = (seriesPorMusculo[m] || 0) + cs2.series;
+    });
+
+    var VOL_LANDMARKS = {
+      1: { label: 'Minimo', color: 'var(--rd)' },
+      3: { label: 'Minimo efectivo', color: 'var(--am)' },
+      6: { label: 'Optimo', color: 'var(--ac)' },
+      11: { label: 'Limite recuperable', color: '#9B7BFF' }
+    };
+    function clasificarVolumen(series) {
+      if (series >= 11) return VOL_LANDMARKS[11];
+      if (series >= 6) return VOL_LANDMARKS[6];
+      if (series >= 3) return VOL_LANDMARKS[3];
+      return VOL_LANDMARKS[1];
+    }
+
+    var musculos = Object.keys(seriesPorMusculo).sort(function(x,y){ return seriesPorMusculo[y]-seriesPorMusculo[x]; });
+    if (musculos.length) {
+      var maxSeries = Math.max.apply(null, musculos.map(function(m){ return seriesPorMusculo[m]; }));
+      html += '<div class="card" style="margin-top:12px;"><div class="ch"><span class="ct">Series por grupo muscular</span></div><div style="padding:12px 14px;">';
+      musculos.forEach(function(m) {
+        var s = seriesPorMusculo[m];
+        var vol = clasificarVolumen(s);
+        var pct = Math.max(8, Math.round((s / maxSeries) * 100));
+        html += '<div style="margin-bottom:12px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">' +
+          '<span style="font-size:12px;font-weight:600;">' + m + '</span>' +
+          '<span style="font-size:12px;font-weight:600;color:' + vol.color + ';">' + s + ' series</span>' +
+          '</div>' +
+          '<div style="background:var(--bg3);border-radius:6px;height:8px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + vol.color + ';border-radius:6px;"></div>' +
+          '</div>' +
+          '<div style="font-size:10px;color:' + vol.color + ';margin-top:2px;">' + vol.label + '</div>' +
+          '</div>';
+      });
+      html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);">' +
+        '<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:var(--rd);"></div><span style="font-size:10px;color:var(--tx3);">Minimo</span></div>' +
+        '<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:var(--am);"></div><span style="font-size:10px;color:var(--tx3);">Min. efectivo</span></div>' +
+        '<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:var(--ac);"></div><span style="font-size:10px;color:var(--tx3);">Optimo</span></div>' +
+        '<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:#9B7BFF;"></div><span style="font-size:10px;color:var(--tx3);">Limite recuperable</span></div>' +
+        '</div></div></div>';
+    }
   }
   e.innerHTML = html;
 }
