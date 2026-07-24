@@ -1701,6 +1701,11 @@ function rDiaProfe(a) {
   var dplanSrc = S._ciclo === 'siguiente' ? (a.dias_plan_siguiente || {}) : (a.dias_plan || {});
   var dia = dplanSrc[S.dia] || {};
   var ejs = dia.ejercicios ? Object.entries(dia.ejercicios) : [];
+  ejs.sort(function(x,y){
+    var ox = x[1].orden !== undefined ? x[1].orden : 999999;
+    var oy = y[1].orden !== undefined ? y[1].orden : 999999;
+    return ox - oy;
+  });
   var si = S.sem, isD = si === 5;
   var pre = (dia.pre && dia.pre[si]) ? dia.pre[si] : {};
   var preTot = calcPre(pre);
@@ -1780,6 +1785,7 @@ function rDiaProfe(a) {
       h += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);overflow-x:auto;margin-bottom:8px;">' +
         '<table class="tbl" style="min-width:680px;">' +
         '<thead style="background:var(--bg3);"><tr>' +
+        '<th style="width:24px;"></th>' +
         '<th style="text-align:left;">Ejercicio</th>' +
         '<th>Video</th><th>Ser</th><th>Reps</th><th>Peso</th><th>Interv/Aj</th><th>Desc</th>' +
         '<th style="min-width:140px;">Obs</th>' +
@@ -1816,7 +1822,8 @@ function rDiaProfe(a) {
           '<span>Interv:</span><input class="fi-sm" type="number" step="0.5" value="' + (ej.intervalo || 2.5) + '" onchange="updEj(\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\',\'intervalo\',this.value)">' +
           '</div>') : ajHTML;
         var descTxt = ej.descanso ? ('<span style="font-family:monospace;font-size:11px;color:var(--bl);">' + ej.descanso + 's</span>') : '—';
-        h += '<tr>' +
+        h += '<tr draggable="true" data-ejid="' + ejId + '" ondragstart="dragEjStart(event,\'' + ejId + '\')" ondragover="dragEjOver(event)" ondrop="dragEjDrop(event,\'' + S.aid + '\',' + S.dia + ',\'' + ejId + '\')" ondragend="dragEjEnd(event)">' +
+          '<td style="cursor:grab;text-align:center;color:var(--tx3);font-size:14px;user-select:none;" title="Arrastra para reordenar">⋮⋮</td>' +
           '<td><div style="font-weight:600;font-size:13px;">' + ej.nombre + '</div><div style="font-size:9px;color:var(--tx3);font-family:monospace;">' + ej.musculo + '</div></td>' +
           '<td style="text-align:center;">' + (ej.link ? '<a class="vb" href="' + ej.link + '" target="_blank">▶</a>' : '—') + '</td>' +
           '<td style="text-align:center;font-family:monospace;font-weight:500;">' + cs.series + (isD ? '<span style="font-size:9px;color:var(--am);"> -40%</span>' : '') + '</td>' +
@@ -1932,6 +1939,9 @@ window.saveEj = async function() {
   var n = v('ej-n').trim();
   if (!n) { toast('Nombre obligatorio', 'err'); return; }
   var ctx = S.ejCtx;
+  var a0 = S.alumnos[ctx.aid];
+  var dplan0 = (S._ciclo === 'siguiente' && a0.dias_plan_siguiente) ? a0.dias_plan_siguiente : a0.dias_plan;
+  var ejsActuales = (dplan0 && dplan0[ctx.di] && dplan0[ctx.di].ejercicios) ? Object.keys(dplan0[ctx.di].ejercicios).length : 0;
   var ej = {
     nombre: n, musculo: v('ej-m'),
     series: parseInt(v('ej-s')) || 3,
@@ -1942,6 +1952,7 @@ window.saveEj = async function() {
     obs: v('ej-ob').trim(),
     grupo: v('ej-g') || null,
     descanso: parseInt(v('ej-d')) || null,
+    orden: ejsActuales,
     perc: {}
   };
   await FP(getDplanPath(ctx.aid) + '/' + ctx.di + '/ejercicios', ej);
@@ -2753,7 +2764,11 @@ function avResumen(a) {
       '<th style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;color:var(--tx3);padding:6px 10px;border-bottom:1px solid var(--bd);text-align:center;">Series x Reps</th>' +
       '<th style="font-family:\'DM Mono\',monospace;font-size:9px;text-transform:uppercase;color:var(--tx3);padding:6px 10px;border-bottom:1px solid var(--bd);text-align:center;">Peso</th>' +
       '</tr></thead><tbody>';
-    Object.values(diaData.ejercicios).forEach(function(ej) {
+    Object.values(diaData.ejercicios).sort(function(x,y){
+      var ox = x.orden !== undefined ? x.orden : 999999;
+      var oy = y.orden !== undefined ? y.orden : 999999;
+      return ox - oy;
+    }).forEach(function(ej) {
       var cs = calcSem(ej, si, a, diaHoy);
       html += '<tr>' +
         '<td style="padding:8px 10px;font-size:12px;font-weight:500;border-bottom:1px solid var(--bd);">' + ej.nombre +
@@ -2913,6 +2928,11 @@ function avRenderDia(a) {
   var e = el('av-dia');
   var dia = (a.dias_plan && a.dias_plan[S.avdia]) ? a.dias_plan[S.avdia] : {};
   var ejs = dia.ejercicios ? Object.entries(dia.ejercicios) : [];
+  ejs.sort(function(x,y){
+    var ox = x[1].orden !== undefined ? x[1].orden : 999999;
+    var oy = y[1].orden !== undefined ? y[1].orden : 999999;
+    return ox - oy;
+  });
   var si = S.avsem, isD = si === 5;
   var pre = (dia.pre && dia.pre[si]) ? dia.pre[si] : {};
   var preTot = calcPre(pre);
@@ -4899,6 +4919,61 @@ window.toggleSidebar = function() {
     if (newIdx !== idx) avSet(AVV[newIdx]);
   }, { passive: true });
 })();
+
+// ── ARRASTRAR EJERCICIOS PARA REORDENAR ──────────────────────────────────────
+var _dragEjId = null;
+
+window.dragEjStart = function(ev, ejId) {
+  _dragEjId = ejId;
+  ev.currentTarget.style.opacity = '0.4';
+  ev.dataTransfer.effectAllowed = 'move';
+};
+
+window.dragEjOver = function(ev) {
+  ev.preventDefault();
+  ev.currentTarget.style.background = 'rgba(61,255,160,.08)';
+};
+
+window.dragEjEnd = function(ev) {
+  ev.currentTarget.style.opacity = '1';
+  document.querySelectorAll('tr[data-ejid]').forEach(function(tr) { tr.style.background = ''; });
+};
+
+window.dragEjDrop = async function(ev, aid, di, targetEjId) {
+  ev.preventDefault();
+  ev.currentTarget.style.background = '';
+  if (!_dragEjId || _dragEjId === targetEjId) return;
+
+  var a = S.alumnos[aid];
+  var dplan = (S._ciclo === 'siguiente' && a.dias_plan_siguiente) ? a.dias_plan_siguiente : a.dias_plan;
+  var dia = dplan && dplan[di];
+  if (!dia || !dia.ejercicios) return;
+
+  var entries = Object.entries(dia.ejercicios).sort(function(x,y){
+    var ox = x[1].orden !== undefined ? x[1].orden : 999999;
+    var oy = y[1].orden !== undefined ? y[1].orden : 999999;
+    return ox - oy;
+  });
+
+  var fromIdx = entries.findIndex(function(kv){ return kv[0] === _dragEjId; });
+  var toIdx = entries.findIndex(function(kv){ return kv[0] === targetEjId; });
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  var moved = entries.splice(fromIdx, 1)[0];
+  entries.splice(toIdx, 0, moved);
+
+  toast('Reordenando...', 'inf');
+  for (var i = 0; i < entries.length; i++) {
+    var ejId = entries[i][0];
+    await FU(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId, { orden: i });
+    dia.ejercicios[ejId].orden = i;
+  }
+
+  S.alumnos[aid] = await FG('alumnos/' + aid);
+  toast('Orden actualizado');
+  rPauta(A());
+  _dragEjId = null;
+};
 </script>
 </body>
 </html>
