@@ -1470,7 +1470,7 @@ window.setView = function(v, btn) {
   // Cerrar sidebar en mobile al elegir vista
   var sbM = document.getElementById('sb-main');
   if (sbM && sbM.classList.contains('open')) toggleSidebar();
-  ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','ficha'].forEach(function(id) {
+  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1480,7 +1480,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1532,7 +1532,7 @@ function renderAll() {
 }
 
 function renderEmpty() {
-  ['dash','pauta','eval','msgs','vol','ficha'].forEach(function(id) {
+  ['dash','pauta','cardio','eval','msgs','vol','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) e.innerHTML = '<div style="text-align:center;padding:60px;color:var(--tx3);"><div style="font-size:36px;margin-bottom:14px;opacity:.3;">🏋️</div><div style="font-size:13px;color:var(--tx2);">Selecciona un alumno</div></div>';
   });
