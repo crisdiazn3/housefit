@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HouseFit Training</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI0MCIgZmlsbD0iIzBkMTExNyIvPgo8cmVjdCB4PSI4IiB5PSI4IiB3aWR0aD0iMTg0IiBoZWlnaHQ9IjE4NCIgcng9IjM0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzREZGQTAiIHN0cm9rZS13aWR0aD0iNCIvPgo8dGV4dCB4PSIxMDAiIHk9IjEzNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyMCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzNERkZBMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SDwvdGV4dD4KPC9zdmc+">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj4KPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI0MCIgZmlsbD0iIzBkMTExNyIvPgo8cmVjdCB4PSI4IiB5PSI4IiB3aWR0aD0iMTg0IiBoZWlnaHQ9IjE4NCIgcng9IjM0IiBmaWxsPSJub25lIiBzdHJva2U9IiMzREZGQTAiIHN0cm9rZS13aWR0aD0iNCIvPgo8dGV4dCB4PSIxMDAiIHk9IjEzNSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEyMCIgZm9udC13ZWlnaHQ9IjkwMCIgZmlsbD0iIzNERkZBMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SDwvdGV4dD4KPC9zdmc+">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HouseFit">
+<meta name="theme-color" content="#0d1117">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#080C10;--bg2:#0D1218;--bg3:#131920;--bg4:#1A2230;--bg5:#212C3A;--bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.12);--bd3:rgba(255,255,255,0.20);--tx:#E8EFF8;--tx2:#7A92AA;--tx3:#3D5268;--ac:#3DFFA0;--ac2:rgba(61,255,160,0.08);--am:#FFB830;--bl:#3DB8FF;--pu:#9B7BFF;--rd:#FF4D6A;--r:10px;--r2:16px;--r3:24px;}
@@ -225,6 +231,35 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .spin{width:30px;height:30px;border:3px solid var(--bg4);border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
 .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+
+/* ── RESPONSIVE MOBILE (item 7,10) ────────────────────────────────────────── */
+#hamburger-btn{display:none;}
+@media (max-width: 860px) {
+  #app{position:relative;}
+  .sb{
+    position:fixed; left:0; top:0; height:100vh; z-index:200;
+    transform:translateX(-100%); transition:transform .25s ease;
+    box-shadow:4px 0 24px rgba(0,0,0,.4);
+  }
+  .sb.open{ transform:translateX(0); }
+  #hamburger-btn{
+    display:flex; align-items:center; justify-content:center;
+    position:fixed; top:12px; left:12px; z-index:210;
+    width:42px; height:42px; border-radius:10px;
+    background:var(--bg2); border:1px solid var(--bd);
+    cursor:pointer; font-size:20px; color:var(--tx);
+  }
+  #sb-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:190;
+  }
+  #sb-overlay.show{ display:block; }
+  .main{ padding-top:56px; }
+
+  /* Botones y texto mas grandes en celular */
+  .btn{ font-size:14px !important; padding:10px 16px !important; }
+  .btn.sm{ font-size:13px !important; padding:8px 14px !important; }
+  .avn{ font-size:13px !important; padding:9px 12px !important; }
+}
 </style>
 </head>
 <body>
@@ -298,7 +333,9 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 
 <!-- PROFE APP -->
 <div id="app" class="hidden">
-  <aside class="sb">
+  <div id="hamburger-btn" onclick="toggleSidebar()">☰</div>
+  <div id="sb-overlay" onclick="toggleSidebar()"></div>
+  <aside class="sb" id="sb-main">
     <div class="sbb">
       <div class="sbn">HouseFit</div>
       <div class="sbr">Panel del profe</div>
@@ -1049,22 +1086,54 @@ window.saveMovilidad = async function() {
 // MEJORA 3: TEMPORIZADOR DESCANSO
 var _timerInterval = null;
 var _timerSec = 0;
+var _timerTotal = 0;
+
+function _ensureTimerOverlay() {
+  var ov = document.getElementById('timer-overlay');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.id = 'timer-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;';
+  ov.innerHTML =
+    '<div style="font-size:13px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;font-family:monospace;">Descanso</div>' +
+    '<div id="timer-display" style="font-size:96px;font-weight:800;color:var(--ac);font-family:monospace;line-height:1;">60</div>' +
+    '<div style="width:220px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;"><div id="timer-bar" style="height:100%;background:var(--ac);width:100%;transition:width 1s linear;"></div></div>' +
+    '<div style="display:flex;gap:12px;margin-top:10px;">' +
+      '<button id="timer-add15" class="btn bg" style="padding:12px 20px;">+15s</button>' +
+      '<button id="timer-skip" class="btn bp" style="padding:12px 24px;">Saltar</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+  document.getElementById('timer-add15').onclick = function() { _timerSec += 15; _timerTotal += 15; };
+  document.getElementById('timer-skip').onclick = function() { _finishTimer(); };
+  return ov;
+}
+
+function _finishTimer() {
+  if (_timerInterval) clearInterval(_timerInterval);
+  var ov = document.getElementById('timer-overlay');
+  if (ov) ov.style.display = 'none';
+  var toastEl = el('toaster');
+  toastEl.textContent = 'Descanso terminado — vamos!';
+  toastEl.className = 'toast show tok';
+  setTimeout(function() { toastEl.className = 'toast'; }, 3000);
+  if (navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+
 window.startTimer = function(secs) {
   if (_timerInterval) { clearInterval(_timerInterval); }
   _timerSec = secs;
-  var toastEl = el('toaster');
+  _timerTotal = secs;
+  var ov = _ensureTimerOverlay();
+  ov.style.display = 'flex';
+  var display = document.getElementById('timer-display');
+  var bar = document.getElementById('timer-bar');
+
   function tick() {
-    if (_timerSec <= 0) {
-      clearInterval(_timerInterval);
-      toastEl.textContent = 'Descanso terminado — vamos! 💪';
-      toastEl.className = 'toast show tok';
-      setTimeout(function() { toastEl.className = 'toast'; }, 3000);
-      return;
-    }
+    if (_timerSec <= 0) { _finishTimer(); return; }
     var m = Math.floor(_timerSec / 60);
     var s2 = _timerSec % 60;
-    toastEl.textContent = '⏱ Descanso: ' + (m > 0 ? m + 'm ' : '') + s2 + 's';
-    toastEl.className = 'toast show tinf';
+    display.textContent = (m > 0 ? m + ':' + (s2<10?'0':'') + s2 : s2 + 's');
+    bar.style.width = Math.max(0, (_timerSec / _timerTotal) * 100) + '%';
     _timerSec--;
   }
   tick();
@@ -1396,6 +1465,9 @@ window.setView = function(v, btn) {
   S.view = v;
   document.querySelectorAll('#app .nb').forEach(function(b) { b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
+  // Cerrar sidebar en mobile al elegir vista
+  var sbM = document.getElementById('sb-main');
+  if (sbM && sbM.classList.contains('open')) toggleSidebar();
   ['dash','pauta','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
@@ -2004,12 +2076,33 @@ function aplicarPlantilla(aid) {
     var idx = parseInt(sel) - 1;
     if (isNaN(idx) || idx < 0 || idx >= pls.length) { toast('Seleccion invalida', 'err'); return; }
     var pl = pls[idx][1];
-    if (!confirm('Aplicar "' + pl.nombre + '" a ' + S.alumnos[aid].nombre + '? Se reemplazaran los ejercicios.')) return;
-    FS('alumnos/' + aid + '/dias_plan', pl.dias_plan).then(async function() {
-      S.alumnos[aid].dias_plan = pl.dias_plan;
-      toast('Plantilla aplicada');
+    var esSiguiente = S._ciclo === 'siguiente';
+    var destino = esSiguiente ? 'PROXIMO CICLO' : 'ciclo actual';
+    if (!confirm('Aplicar "' + pl.nombre + '" a ' + S.alumnos[aid].nombre + ' (' + destino + ')? ' + (esSiguiente ? '' : 'Se archivara el plan actual como respaldo antes de reemplazar.'))) return;
+
+    (async function() {
+      var path = getDplanPath(aid);
+      // Archivar respaldo solo si estamos reemplazando el CICLO ACTUAL (no tiene sentido archivar "siguiente" que aun no se usa)
+      if (!esSiguiente) {
+        var a = S.alumnos[aid];
+        if (a.dias_plan && Object.keys(a.dias_plan).length > 0) {
+          await FP('alumnos/' + aid + '/historial_planes', {
+            label: 'Respaldo automatico antes de aplicar "' + pl.nombre + '" — ' + new Date().toLocaleDateString('es-CL'),
+            fecha: new Date().toISOString().slice(0,10),
+            dias_plan: a.dias_plan,
+            semanas: getSemanas(a)
+          });
+        }
+      }
+      await FS(path, pl.dias_plan);
+      if (esSiguiente) {
+        S.alumnos[aid].dias_plan_siguiente = pl.dias_plan;
+      } else {
+        S.alumnos[aid].dias_plan = pl.dias_plan;
+      }
+      toast('Plantilla aplicada a ' + destino + (esSiguiente ? '' : ' (respaldo guardado en Historial)'));
       rPauta(A());
-    });
+    })();
   });
 }
 window.aplicarPlantilla = aplicarPlantilla;
@@ -2421,6 +2514,25 @@ function rFicha(a) {
     '<input type="checkbox" id="toggle-ranking" ' + (a.en_ranking?'checked':'') + ' onchange="toggleRanking(this.checked)" style="width:18px;height:18px;cursor:pointer;">' +
     '</label></div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Nutricion</span></div>' +
+    '<div style="padding:12px 14px;">' +
+    '<div class="g2" style="margin-bottom:8px;">' +
+    '<div class="fg"><label class="fl">Meta calorica diaria</label><input class="fi" id="nut-kcal" type="number" value="' + ((a.nutricion&&a.nutricion.kcal)||'') + '" placeholder="Ej: 2400"></div>' +
+    '<div class="fg"><label class="fl">Objetivo</label><input class="fi" id="nut-obj" value="' + ((a.nutricion&&a.nutricion.objetivo)||'') + '" placeholder="Ej: Definicion 2 - Perdida moderada"></div>' +
+    '<div class="fg"><label class="fl">Proteina (g)</label><input class="fi" id="nut-prot" type="number" value="' + ((a.nutricion&&a.nutricion.prot)||'') + '"></div>' +
+    '<div class="fg"><label class="fl">Carbohidratos (g)</label><input class="fi" id="nut-carbo" type="number" value="' + ((a.nutricion&&a.nutricion.carbo)||'') + '"></div>' +
+    '<div class="fg"><label class="fl">Grasas (g)</label><input class="fi" id="nut-grasa" type="number" value="' + ((a.nutricion&&a.nutricion.grasa)||'') + '"></div>' +
+    '<div class="fg"><label class="fl">Margen flexibilidad (kcal)</label><input class="fi" id="nut-flex" type="number" value="' + ((a.nutricion&&a.nutricion.flexibilidad)||'') + '" placeholder="Ej: 200"></div>' +
+    '</div>' +
+    '<div class="fg" style="margin-bottom:8px;"><label class="fl">Distribucion por comida (una por linea: Nombre = porciones)</label>' +
+    '<textarea class="fta" id="nut-comidas" style="min-height:70px;" placeholder="Desayuno = 3P . 3C . 3G&#10;Almuerzo = 3P . 3C . 3G&#10;Once = 2P . 1C . 3G&#10;Cena = 5P . 4C . 9G">' + ((a.nutricion&&a.nutricion._comidasRaw)||'') + '</textarea></div>' +
+    '<div class="fg" style="margin-bottom:8px;"><label class="fl">Tabla de equivalencias</label>' +
+    '<textarea class="fta" id="nut-equiv" style="min-height:70px;" placeholder="1P = 100g pollo, 2 huevos o 1 scoop proteina&#10;1C = 150g arroz cocido, 1 papa mediana&#10;1G = 10ml aceite de oliva, 1/3 palta">' + ((a.nutricion&&a.nutricion.equivalencias)||'') + '</textarea></div>' +
+    '<div class="fg" style="margin-bottom:8px;"><label class="fl">Notas para el alumno</label>' +
+    '<textarea class="fta" id="nut-notas" style="min-height:50px;">' + ((a.nutricion&&a.nutricion.notas)||'') + '</textarea></div>' +
+    '<button class="btn bp sm" id="btn-guardar-nutricion">Guardar nutricion</button>' +
+    '</div></div>' +
+    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Creditos y logros</span>' +
     '<span style="font-size:13px;font-weight:600;color:var(--ac);">' + (a.creditos||0) + ' cred.</span></div>' +
     '<div style="padding:10px 14px;">' +
@@ -2466,6 +2578,10 @@ function rFicha(a) {
   // Bind activar ciclo
   var _btnAC = document.getElementById('btn-activar-ciclo');
   if (_btnAC) _btnAC.onclick = function() { activarProximoCiclo(); };
+
+  // Bind guardar nutricion
+  var _btnNut = document.getElementById('btn-guardar-nutricion');
+  if (_btnNut) _btnNut.onclick = function() { guardarNutricion(); };
 
   (function(aid) {
     var zd = document.getElementById('zona-danger');
@@ -2558,8 +2674,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','ficha'];
-var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Ficha'];
+var AVV = ['resumen','pauta','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
+var AVL = ['Resumen','Mi Pauta','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2588,6 +2704,7 @@ function renderAV() {
   if (S.avv === 'lesiones')    avLesiones(a);
   if (S.avv === 'beneficios')  avBeneficios(a);
   if (S.avv === 'creditos')   avCreditos(a);
+  if (S.avv === 'nutricion')  avNutricion(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
 window.avSet = function(v3) { S.avv = v3; renderAV(); };
@@ -4597,6 +4714,138 @@ window.procesarCanjeGlobal = async function(notiId, n) {
   toast('Canje confirmado y alumno notificado');
   rDashGlobal();
 };
+
+// ── NUTRICION (alumno) ────────────────────────────────────────────────────────
+function avNutricion(a) {
+  var e = el('av-content');
+  var n = a.nutricion || null;
+  if (!n || !n.kcal) {
+    e.innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">Sin meta nutricional aun</div>' +
+      '<div style="font-size:12px;color:var(--tx2);">Tu entrenador aun no ha configurado tu plan de nutricion.</div>' +
+      '</div>';
+    return;
+  }
+  var comidas = n.comidas || [];
+  var html = '';
+
+  html += '<div class="card" style="text-align:center;padding:18px;margin-bottom:12px;">' +
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;">Meta calorica de hoy</div>' +
+    '<div style="font-size:34px;font-weight:700;margin:4px 0;">' + n.kcal + ' <span style="font-size:13px;color:var(--tx2);">kcal</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;">' +
+    '<div style="background:rgba(61,255,160,.1);border-radius:8px;padding:8px 4px;"><div style="font-size:10px;color:var(--ac);">Proteina</div><div style="font-size:15px;font-weight:600;color:var(--ac);">' + (n.prot||0) + 'g</div></div>' +
+    '<div style="background:rgba(255,184,48,.1);border-radius:8px;padding:8px 4px;"><div style="font-size:10px;color:var(--am);">Carbos</div><div style="font-size:15px;font-weight:600;color:var(--am);">' + (n.carbo||0) + 'g</div></div>' +
+    '<div style="background:rgba(61,184,255,.1);border-radius:8px;padding:8px 4px;"><div style="font-size:10px;color:var(--bl);">Grasas</div><div style="font-size:15px;font-weight:600;color:var(--bl);">' + (n.grasa||0) + 'g</div></div>' +
+    '</div></div>';
+
+  if (comidas.length) {
+    html += '<div style="font-size:13px;font-weight:600;margin:0 0 8px;">Distribucion por comida</div>';
+    comidas.forEach(function(c) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:9px 12px;margin-bottom:6px;">' +
+        '<span style="font-size:13px;">' + c.nombre + '</span>' +
+        '<span style="font-size:11px;color:var(--tx2);">' + c.porciones + '</span>' +
+        '</div>';
+    });
+  }
+
+  if (n.equivalencias) {
+    html += '<div style="font-size:13px;font-weight:600;margin:14px 0 8px;">Tabla de equivalencias</div>' +
+      '<div class="card" style="padding:12px 14px;margin-bottom:12px;">' +
+      '<div style="font-size:12px;white-space:pre-line;line-height:1.6;">' + n.equivalencias + '</div>' +
+      '</div>';
+  }
+
+  if (n.flexibilidad) {
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(155,123,255,.1);border:1px solid rgba(155,123,255,.25);border-radius:8px;padding:10px 14px;margin-bottom:12px;">' +
+      '<span style="font-size:13px;color:#9B7BFF;">Margen de flexibilidad</span>' +
+      '<span style="font-size:14px;font-weight:600;color:#9B7BFF;">' + n.flexibilidad + ' kcal</span>' +
+      '</div>';
+  }
+
+  html += '<div class="card" style="padding:14px;">' +
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:3px;">Objetivo</div>' +
+    '<div style="font-size:13px;margin-bottom:10px;">' + (n.objetivo || '—') + '</div>' +
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:3px;">Notas de tu entrenador</div>' +
+    '<div style="font-size:13px;">' + (n.notas || '—') + '</div>' +
+    '</div>';
+
+  e.innerHTML = html;
+}
+
+window.guardarNutricion = async function() {
+  if (!S.aid) return;
+  var kcal = parseInt(el('nut-kcal') ? el('nut-kcal').value : 0) || 0;
+  var prot = parseInt(el('nut-prot') ? el('nut-prot').value : 0) || 0;
+  var carbo = parseInt(el('nut-carbo') ? el('nut-carbo').value : 0) || 0;
+  var grasa = parseInt(el('nut-grasa') ? el('nut-grasa').value : 0) || 0;
+  var flex = parseInt(el('nut-flex') ? el('nut-flex').value : 0) || 0;
+  var objetivo = el('nut-obj') ? el('nut-obj').value.trim() : '';
+  var equivalencias = el('nut-equiv') ? el('nut-equiv').value.trim() : '';
+  var notas = el('nut-notas') ? el('nut-notas').value.trim() : '';
+  var comidasRaw = el('nut-comidas') ? el('nut-comidas').value.trim() : '';
+
+  // Parsear "Nombre = porciones" por linea
+  var comidas = comidasRaw.split('\n').map(function(line) {
+    var parts = line.split('=');
+    if (parts.length < 2) return null;
+    return { nombre: parts[0].trim(), porciones: parts.slice(1).join('=').trim() };
+  }).filter(Boolean);
+
+  var nutricion = {
+    kcal: kcal, prot: prot, carbo: carbo, grasa: grasa, flexibilidad: flex,
+    objetivo: objetivo, equivalencias: equivalencias, notas: notas,
+    comidas: comidas, _comidasRaw: comidasRaw
+  };
+
+  try {
+    await FU('alumnos/' + S.aid, { nutricion: nutricion });
+    S.alumnos[S.aid].nutricion = nutricion;
+    toast('Nutricion guardada');
+  } catch (err) {
+    toast('Error al guardar: ' + (err.message || 'revisa la consola'), 'err');
+  }
+};
+
+// ── SIDEBAR TOGGLE (mobile) ──────────────────────────────────────────────────
+window.toggleSidebar = function() {
+  var sb = document.getElementById('sb-main');
+  var ov = document.getElementById('sb-overlay');
+  if (sb) sb.classList.toggle('open');
+  if (ov) ov.classList.toggle('show');
+};
+
+// ── SWIPE NAVIGATION (alumno) ────────────────────────────────────────────────
+(function() {
+  var touchStartX = 0, touchStartY = 0;
+  var SWIPE_THRESHOLD = 60;
+
+  document.addEventListener('touchstart', function(e) {
+    if (S.modo !== 'alumno') return;
+    var contentEl = document.getElementById('av-content');
+    if (!contentEl || !contentEl.contains(e.target)) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    if (S.modo !== 'alumno') return;
+    var contentEl = document.getElementById('av-content');
+    if (!contentEl || !contentEl.contains(e.target)) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    var idx = AVV.indexOf(S.avv);
+    if (idx === -1) return;
+    var newIdx;
+    if (dx < 0) { // swipe izquierda -> siguiente pestaña
+      newIdx = Math.min(AVV.length - 1, idx + 1);
+    } else { // swipe derecha -> pestaña anterior
+      newIdx = Math.max(0, idx - 1);
+    }
+    if (newIdx !== idx) avSet(AVV[newIdx]);
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
