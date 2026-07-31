@@ -347,7 +347,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('pauta',this)"><div class="nd"></div>Pauta</button>
         <button class="nb" onclick="setView('cardio',this)"><div class="nd"></div>Cardio</button>
         <button class="nb" onclick="setView('eval',this)"><div class="nd"></div>Evaluaciones</button>
-        <button class="nb" onclick="setView('msgs',this)"><div class="nd"></div>Mensajes</button>
+        <button class="nb" onclick="setView('msgs',this)"><div class="nd"></div>Mensajes <span id="nmsg" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
         <button class="nb" onclick="setView('pagos',this)"><div class="nd"></div>Pagos <span id="npagos" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
         <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
         <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
@@ -355,6 +355,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
         <button class="nb" onclick="setView('premios',this)"><div class="nd"></div>Premios</button>
         <button class="nb" onclick="setView('ranking',this)"><div class="nd"></div>Ranking</button>
+        <button class="nb" onclick="setView('giftcards',this)"><div class="nd"></div>Giftcards</button>
         <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
         <button class="nb" onclick="setView('ficha',this)"><div class="nd"></div>Ficha</button>
       </div>
@@ -390,6 +391,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vbeneficios"></div>
     <div class="content hidden" id="vpremios"></div>
     <div class="content hidden" id="vranking"></div>
+    <div class="content hidden" id="vgiftcards"></div>
     <div class="content hidden" id="vficha"></div>
   </main>
 </div>
@@ -1413,6 +1415,7 @@ async function loadAlumnos() {
   S.alumnos = d || {};
   renderSide();
   checkPagos();
+  checkMensajes();
 }
 
 function pagoSt(a) {
@@ -1428,6 +1431,16 @@ function checkPagos() {
   var cnt = Object.values(S.alumnos).filter(function(a) { var s = pagoSt(a); return s === 'vencido' || s === 'pronto'; }).length;
   var n = el('npagos');
   if (n) { n.classList.toggle('hidden', cnt === 0); n.textContent = cnt; }
+}
+
+function checkMensajes() {
+  var total = 0;
+  Object.values(S.alumnos).forEach(function(a) {
+    if (!a.mensajes) return;
+    total += Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length;
+  });
+  var n = el('nmsg');
+  if (n) { n.classList.toggle('hidden', total === 0); n.textContent = total; }
 }
 
 function renderSide() {
@@ -1470,7 +1483,7 @@ window.setView = function(v, btn) {
   // Cerrar sidebar en mobile al elegir vista
   var sbM = document.getElementById('sb-main');
   if (sbM && sbM.classList.contains('open')) toggleSidebar();
-  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','ficha'].forEach(function(id) {
+  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1480,7 +1493,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',giftcards:'Giftcards',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1514,7 +1527,7 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash') { renderEmpty(); return; }
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash' && S.view !== 'giftcards') { renderEmpty(); return; }
   if (S.view === 'dash')  { if (a) rDash(a); else rDashGlobal(); }
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'cardio') rCardio(a);
@@ -1527,6 +1540,7 @@ function renderAll() {
   if (S.view === 'beneficios') rBeneficios();
   if (S.view === 'premios') rPremios();
   if (S.view === 'ranking') rRanking();
+  if (S.view === 'giftcards') rGiftcards();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
@@ -1550,7 +1564,13 @@ function calcSem(ej, si, a, di) {
   for (var s = 0; s < idx; s++) {
     var p = (ej.perc && ej.perc[s] != null) ? ej.perc[s] : null;
     var dr = 0, dp = 0;
-    if (p === 1) { dr = 2; dp = 1; }
+    if (p === 1) {
+      dp = 1;
+      if (reps >= 16) dr = -5;
+      else if (reps >= 13) dr = 10 - reps;
+      else if (reps >= 10) dr = 8 - reps;
+      else dr = -2;
+    }
     else if (p === 2) { dr = 2; }
     else if (p === 3) { dr = 1; }
     else if (p === 4) { dr = -1; }
@@ -1645,7 +1665,8 @@ function rDash(a) {
   }).join('');
   var weekHTML = '<div class="card" style="margin-bottom:14px;"><div class="ch"><span class="ct">Semana actual</span></div>' +
     '<div>' + (weekRows || '<div style="padding:16px;text-align:center;color:var(--tx3);">Sin alumnos</div>') + '</div></div>';
-  e.innerHTML = alertasHTML + weekHTML + '<div class="sg">' +
+  e.innerHTML = '<div id="dash-notif-container-alumno" style="margin-bottom:14px;"></div>' +
+    alertasHTML + weekHTML + '<div class="sg">' +
     '<div class="sc"><div class="sl">Ejercicios</div><div class="sv" style="color:var(--bl);">' + totalEj + '</div><div class="ss">en el plan</div></div>' +
     '<div class="sc"><div class="sl">Semanas</div><div class="sv" style="color:var(--am);">5+1</div><div class="ss">prog + descarga</div></div>' +
     '<div class="sc"><div class="sl">Racha</div><div class="sv" style="font-size:22px;color:var(--am);">' + racha + ' 🔥</div><div class="ss">sesiones</div></div>' +
@@ -1653,6 +1674,7 @@ function rDash(a) {
     '</div>' +
     '<div class="card"><div class="ch"><span class="ct">Indicador de progresión</span></div>' +
     '<div>' + (rows || '<div style="padding:20px;text-align:center;color:var(--tx3);">Sin ejercicios</div>') + '</div></div>';
+  renderNotifCard('dash-notif-container-alumno');
 }
 
 function getDplanPath(aid) {
@@ -2323,6 +2345,7 @@ function rMsgs(a) {
         a.mensajes[kv[0]].leido = true;
       });
       renderSide();
+      checkMensajes();
     }
   }
 }
@@ -2685,7 +2708,7 @@ window.saveAl = async function() {
     S.alumnos[r.key] = datos;
   }
   closeM('m-al'); toast(S.editId ? 'Actualizado' : 'Alumno creado');
-  renderSide(); checkPagos(); renderAll();
+  renderSide(); checkPagos(); checkMensajes(); renderAll();
 };
 
 window.delAl = async function() {
@@ -4687,10 +4710,7 @@ document.addEventListener('click', function(e) {
 });
 
 // ── DASHBOARD GLOBAL (sin alumno seleccionado) ───────────────────────────────
-function rDashGlobal() {
-  var e = el('vdash');
-  if (!e) return;
-
+function renderNotifCard(containerId) {
   var mensajesPendientes = [];
   Object.entries(S.alumnos).forEach(function(kv) {
     var id = kv[0], al = kv[1];
@@ -4698,10 +4718,6 @@ function rDashGlobal() {
     var noLeidos = Object.values(al.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; });
     if (noLeidos.length) mensajesPendientes.push({ id: id, nombre: al.nombre, cantidad: noLeidos.length, ultimo: noLeidos[noLeidos.length-1] });
   });
-
-  var html = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Dashboard</span></div>' +
-    '<div id="dash-global-container"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando notificaciones...</div></div>';
-  e.innerHTML = html;
 
   var msgHTML = '';
   if (mensajesPendientes.length) {
@@ -4721,14 +4737,14 @@ function rDashGlobal() {
   }
 
   FG('notificaciones').then(function(snap) {
-    var container = document.getElementById('dash-global-container');
+    var container = document.getElementById(containerId);
     if (!container) return;
     var notifs = snap ? Object.entries(snap) : [];
 
     var canjes = notifs.filter(function(kv){ return kv[1].tipo === 'canje' && !kv[1].procesado; });
     var encuestas = notifs.filter(function(kv){ return kv[1].tipo === 'encuesta'; })
       .sort(function(a,b){ return (b[1].fecha||'').localeCompare(a[1].fecha||''); }).slice(0,5);
-    var pesos = notifs.filter(function(kv){ return kv[1].tipo === 'peso' || kv[1].tipo === 'intervalo'; })
+    var pesos = notifs.filter(function(kv){ return kv[1].tipo === 'peso' || kv[1].tipo === 'intervalo' || kv[1].tipo === 'cambio_peso'; })
       .sort(function(a,b){ return (b[1].fecha||'').localeCompare(a[1].fecha||''); }).slice(0,8);
 
     var html2 = msgHTML;
@@ -4755,9 +4771,13 @@ function rDashGlobal() {
         '<div class="ch"><span class="ct">Pesos e intervalos sugeridos</span></div><div>';
       pesos.forEach(function(kv) {
         var n = kv[1];
+        var etiqueta = n.valor;
+        if (n.tipo === 'cambio_peso') {
+          etiqueta = n.pesoAnterior + 'kg -> ' + n.pesoNuevo + 'kg (Sem ' + n.semana + ')';
+        }
         html2 += '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);">' +
           '<div style="flex:1;font-size:12px;"><b>' + n.alumno + '</b> - ' + n.ejercicio + '</div>' +
-          '<span style="font-size:12px;font-weight:600;color:var(--ac);">' + n.valor + '</span>' +
+          '<span style="font-size:12px;font-weight:600;color:var(--ac);">' + etiqueta + '</span>' +
           '</div>';
       });
       html2 += '</div></div>';
@@ -4783,7 +4803,7 @@ function rDashGlobal() {
     }
 
     if (!msgHTML && !canjes.length && !pesos.length && !encuestas.length) {
-      html2 = '<div class="card"><div style="padding:30px;text-align:center;color:var(--tx3);font-size:12px;">Todo al dia. Sin notificaciones pendientes.</div></div>';
+      html2 = '<div class="card"><div style="padding:16px;text-align:center;color:var(--tx3);font-size:12px;">Sin notificaciones pendientes.</div></div>';
     }
 
     container.innerHTML = html2;
@@ -4794,6 +4814,14 @@ function rDashGlobal() {
       if (btn) btn.onclick = function() { procesarCanjeGlobal(id, n); };
     });
   });
+}
+
+function rDashGlobal() {
+  var e = el('vdash');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Dashboard</span></div>' +
+    '<div id="dash-global-container"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando notificaciones...</div></div>';
+  renderNotifCard('dash-global-container');
 }
 
 window.procesarCanjeGlobal = async function(notiId, n) {
@@ -4807,7 +4835,7 @@ window.procesarCanjeGlobal = async function(notiId, n) {
     });
   }
   toast('Canje confirmado y alumno notificado');
-  rDashGlobal();
+  renderAll();
 };
 
 // ── NUTRICION (alumno) ────────────────────────────────────────────────────────
@@ -5184,6 +5212,90 @@ window.agruparSeleccionados = async function() {
   S.alumnos[S.aid] = await FG('alumnos/' + S.aid);
   toast('Ejercicios agrupados en ' + letraNueva);
   rPauta(A());
+};
+
+// ── GIFTCARDS ─────────────────────────────────────────────────────────────────
+function rGiftcards() {
+  var e = el('vgiftcards');
+  if (!e) return;
+
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Giftcards</span></div>' +
+    '<div class="card" style="max-width:480px;margin-bottom:14px;"><div style="padding:14px;">' +
+    '<div class="fg" style="margin-bottom:10px;"><label class="fl">Nombre (comprador o destinatario)</label>' +
+    '<input class="fi" id="gc-nombre" placeholder="Ej: Juan Diaz"></div>' +
+    '<button class="btn bp sm" onclick="generarGiftcard()">Generar codigo</button>' +
+    '</div></div>' +
+    '<div id="giftcards-lista"><div style="padding:20px;text-align:center;color:var(--tx3);">Cargando...</div></div>';
+
+  FG('giftcards').then(function(snap) {
+    var cont = document.getElementById('giftcards-lista');
+    if (!cont) return;
+    var items = snap ? Object.entries(snap) : [];
+    items.sort(function(a,b){ return (b[1].fecha_generado||'').localeCompare(a[1].fecha_generado||''); });
+
+    if (!items.length) {
+      cont.innerHTML = '<div class="card"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin giftcards generadas aun.</div></div>';
+      return;
+    }
+
+    var html = '<div class="card" style="max-width:640px;"><div>';
+    items.forEach(function(kv) {
+      var id = kv[0], g = kv[1];
+      var listo = g.estado === 'listo';
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+        '<div style="flex:1;">' +
+        '<div style="font-size:13px;font-weight:600;">' + g.nombre + '</div>' +
+        '<div style="font-size:12px;color:var(--ac);font-family:monospace;letter-spacing:.05em;">' + g.codigo + '</div>' +
+        '<div style="font-size:10px;color:var(--tx3);">Generado: ' + g.fecha_generado + ' — Vence: ' + g.fecha_vencimiento + '</div>' +
+        '</div>' +
+        '<button class="btn ' + (listo ? 'bp' : 'bg') + ' sm" id="gc-toggle-' + id + '">' + (listo ? '✓ Listo' : 'Pendiente') + '</button>' +
+        '</div>';
+    });
+    html += '</div></div>';
+    cont.innerHTML = html;
+
+    items.forEach(function(kv) {
+      var id = kv[0], g = kv[1];
+      var btn = document.getElementById('gc-toggle-' + id);
+      if (btn) btn.onclick = function() { toggleGiftcardEstado(id, g.estado); };
+    });
+  });
+}
+
+window.generarGiftcard = async function() {
+  var nombre = el('gc-nombre') ? el('gc-nombre').value.trim() : '';
+  if (!nombre) { toast('Ingresa un nombre', 'err'); return; }
+
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var codigo = 'HF-';
+  for (var i = 0; i < 6; i++) codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+
+  var hoy = new Date();
+  var vence = new Date(hoy.getTime() + 30*86400000);
+
+  var giftcard = {
+    nombre: nombre,
+    codigo: codigo,
+    estado: 'pendiente',
+    fecha_generado: hoy.toISOString().slice(0,10),
+    fecha_vencimiento: vence.toISOString().slice(0,10)
+  };
+
+  try {
+    await FP('giftcards', giftcard);
+    if (el('gc-nombre')) el('gc-nombre').value = '';
+    toast('Codigo generado: ' + codigo);
+    rGiftcards();
+  } catch (err) {
+    toast('Error al guardar: ' + (err.message || 'revisa la consola'), 'err');
+  }
+};
+
+window.toggleGiftcardEstado = async function(id, estadoActual) {
+  var nuevo = estadoActual === 'listo' ? 'pendiente' : 'listo';
+  await FU('giftcards/' + id, { estado: nuevo });
+  toast(nuevo === 'listo' ? 'Marcado como listo' : 'Marcado como pendiente');
+  rGiftcards();
 };
 </script>
 </body>
