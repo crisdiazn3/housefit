@@ -555,6 +555,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <option>Columna</option><option>Rodillas</option><option>Tobillos</option><option>Muñecas</option>
       </select></div>
       <div class="fg"><label class="fl">Descanso (s)</label><input class="fi" id="mov-d" type="number" placeholder="30"></div>
+      <div class="fg" style="grid-column:1/-1;"><label class="fl">Link de video (YouTube)</label><input class="fi" id="mov-link" placeholder="https://youtube.com/..."></div>
     </div>
     <div class="fg" style="margin-bottom:8px;"><label class="fl">Observaciones</label><textarea class="fta" id="mov-obs" placeholder="Cues técnicos..." style="min-height:50px;"></textarea></div>
     <div class="mf">
@@ -1065,7 +1066,7 @@ window.saveCardio = async function() {
 
 // MEJORA 6: MOVILIDAD
 function openMovilidadModal() {
-  ['mov-n','mov-s','mov-r','mov-d','mov-obs'].forEach(function(id) { if(el(id)) el(id).value=''; });
+  ['mov-n','mov-s','mov-r','mov-d','mov-obs','mov-link'].forEach(function(id) { if(el(id)) el(id).value=''; });
   el('m-movilidad').classList.remove('hidden');
 }
 window.openMovilidadModal = openMovilidadModal;
@@ -1080,6 +1081,7 @@ window.saveMovilidad = async function() {
     reps: el('mov-r').value || '10',
     zona: el('mov-zona').value,
     descanso: parseInt(el('mov-d').value) || 30,
+    link: el('mov-link') ? el('mov-link').value.trim() : '',
     obs: el('mov-obs').value.trim()
   };
   await FP('alumnos/' + S.aid + '/dias_plan/' + S.dia + '/movilidad', mov);
@@ -1770,7 +1772,7 @@ function rDiaProfe(a) {
     movilidadHTML = '<div style="background:rgba(155,123,255,.08);border:1px solid rgba(155,123,255,.2);border-radius:var(--r);padding:8px 12px;margin-bottom:8px;">' +
       '<div style="font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Movilidad pre-pauta</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-      movilidad.map(function(mv) { return '<span style="background:rgba(155,123,255,.1);border:1px solid rgba(155,123,255,.2);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--pu);">' + mv.nombre + ' ' + mv.series + 'x' + mv.reps + '</span>'; }).join('') +
+      movilidad.map(function(mv) { return '<span style="background:rgba(155,123,255,.1);border:1px solid rgba(155,123,255,.2);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--pu);">' + mv.nombre + ' ' + mv.series + 'x' + mv.reps + (mv.link ? ' <a href="' + mv.link + '" target="_blank" style="color:var(--pu);text-decoration:none;">▶</a>' : '') + '</span>'; }).join('') +
       '</div></div>';
   }
   // Cardio final
@@ -2913,7 +2915,7 @@ function avPauta(a) {
   var avMovilidadHTML = av_movilidad.length ? '<div style="background:rgba(155,123,255,.08);border:1px solid rgba(155,123,255,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;">' +
     '<div style="font-family:monospace,monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;">🔄 Movilidad pre-pauta</div>' +
     '<div style="display:flex;flex-direction:column;gap:5px;">' +
-    av_movilidad.map(function(m) { return '<div style="font-size:12px;color:var(--tx2);">• ' + m.nombre + ' — ' + m.series + 'x' + m.reps + (m.obs?' <span style="color:var(--tx3);">(' + m.obs + ')</span>':'') + '</div>'; }).join('') +
+    av_movilidad.map(function(m) { return '<div style="font-size:12px;color:var(--tx2);">• ' + m.nombre + ' — ' + m.series + 'x' + m.reps + (m.link ? ' <a href="' + m.link + '" target="_blank" style="color:var(--pu);text-decoration:none;">▶</a>' : '') + (m.obs?' <span style="color:var(--tx3);">(' + m.obs + ')</span>':'') + '</div>'; }).join('') +
     '</div></div>' : '';
   e.innerHTML = avSemIndicator + avCardioInicioHTML + avMovilidadHTML + (racha2>0?'<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--am);">' + racha2 + ' 🔥</span><span style="font-size:12px;color:var(--am);">sesiones seguidas</span></div>':'') +
     (cIconAv?'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:8px 14px;margin-bottom:10px;font-size:12px;">' + cIconAv + '</div>':'') +
