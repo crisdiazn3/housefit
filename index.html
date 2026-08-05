@@ -353,6 +353,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
         <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
         <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
+        <button class="nb" onclick="setView('bibmov',this)"><div class="nd"></div>Biblioteca Movilidad</button>
         <button class="nb" onclick="setView('premios',this)"><div class="nd"></div>Premios</button>
         <button class="nb" onclick="setView('ranking',this)"><div class="nd"></div>Ranking</button>
         <button class="nb" onclick="setView('giftcards',this)"><div class="nd"></div>Giftcards</button>
@@ -389,6 +390,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vplantillas"></div>
     <div class="content hidden" id="vprofesionales"></div>
     <div class="content hidden" id="vbeneficios"></div>
+    <div class="content hidden" id="vbibmov"></div>
     <div class="content hidden" id="vpremios"></div>
     <div class="content hidden" id="vranking"></div>
     <div class="content hidden" id="vgiftcards"></div>
@@ -546,8 +548,18 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 <div class="ov hidden" id="m-movilidad">
   <div class="modal">
     <div class="mt">Agregar ejercicio de movilidad</div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Selecciona de tu Biblioteca de Movilidad</label>
+      <select class="fs" id="mov-select" onchange="onMovSelectChange()">
+        <option value="">Cargando biblioteca...</option>
+      </select>
+    </div>
+    <div id="mov-manual-fields" class="hidden">
+      <div class="g2" style="margin-bottom:8px;">
+        <div class="fg" style="grid-column:1/-1;"><label class="fl">Ejercicio (nombre nuevo)</label><input class="fi" id="mov-n" placeholder="Ej: Rotación de cadera..."></div>
+        <div class="fg" style="grid-column:1/-1;"><label class="fl">Link de video (YouTube)</label><input class="fi" id="mov-link" placeholder="https://youtube.com/..."></div>
+      </div>
+    </div>
     <div class="g2" style="margin-bottom:8px;">
-      <div class="fg" style="grid-column:1/-1;"><label class="fl">Ejercicio</label><input class="fi" id="mov-n" placeholder="Ej: Rotación de cadera, Apertura de cadera..."></div>
       <div class="fg"><label class="fl">Series</label><input class="fi" id="mov-s" type="number" min="1" placeholder="2"></div>
       <div class="fg"><label class="fl">Reps / Tiempo</label><input class="fi" id="mov-r" placeholder="10 o 30s"></div>
       <div class="fg"><label class="fl">Zona del cuerpo</label><select class="fs" id="mov-zona">
@@ -555,7 +567,6 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
         <option>Columna</option><option>Rodillas</option><option>Tobillos</option><option>Muñecas</option>
       </select></div>
       <div class="fg"><label class="fl">Descanso (s)</label><input class="fi" id="mov-d" type="number" placeholder="30"></div>
-      <div class="fg" style="grid-column:1/-1;"><label class="fl">Link de video (YouTube)</label><input class="fi" id="mov-link" placeholder="https://youtube.com/..."></div>
     </div>
     <div class="fg" style="margin-bottom:8px;"><label class="fl">Observaciones</label><textarea class="fta" id="mov-obs" placeholder="Cues técnicos..." style="min-height:50px;"></textarea></div>
     <div class="mf">
@@ -688,6 +699,24 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="mf">
       <button class="btn bg sm" onclick="closeM('m-add-prof')">Cancelar</button>
       <button class="btn bp sm" onclick="saveProf()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-add-bibmov">
+  <div class="modal">
+    <div class="mt">Agregar a Biblioteca de Movilidad</div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg" style="grid-column:1/-1;"><label class="fl">Nombre del ejercicio</label><input class="fi" id="bibmov-nombre" placeholder="Ej: World's Greatest Stretch"></div>
+      <div class="fg"><label class="fl">Zona del cuerpo</label><select class="fs" id="bibmov-zona">
+        <option>General</option><option>Hombros</option><option>Cadera</option>
+        <option>Columna</option><option>Rodillas</option><option>Tobillos</option><option>Muñecas</option>
+      </select></div>
+      <div class="fg"><label class="fl">Link de video (YouTube)</label><input class="fi" id="bibmov-link" placeholder="https://youtube.com/..."></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-add-bibmov')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveBibMov()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1068,20 +1097,58 @@ window.saveCardio = async function() {
 function openMovilidadModal() {
   ['mov-n','mov-s','mov-r','mov-d','mov-obs','mov-link'].forEach(function(id) { if(el(id)) el(id).value=''; });
   el('m-movilidad').classList.remove('hidden');
+  var sel = el('mov-select');
+  if (sel) {
+    sel.innerHTML = '<option value="">Cargando biblioteca...</option>';
+    FG('biblioteca_movilidad').then(function(snap) {
+      var items = snap ? Object.entries(snap) : [];
+      var opts = '<option value="">-- Selecciona un ejercicio --</option>';
+      items.forEach(function(kv) {
+        var id = kv[0], item = kv[1];
+        opts += '<option value="' + id + '" data-nombre="' + item.nombre.replace(/"/g,'') + '" data-link="' + (item.link||'').replace(/"/g,'') + '" data-zona="' + (item.zona||'General') + '">' + item.nombre + ' (' + (item.zona||'General') + ')</option>';
+      });
+      opts += '<option value="__otro__">+ Otro (escribir manualmente)</option>';
+      sel.innerHTML = opts;
+      var manualDiv = el('mov-manual-fields');
+      if (manualDiv) manualDiv.classList.add('hidden');
+    });
+  }
 }
 window.openMovilidadModal = openMovilidadModal;
 
+window.onMovSelectChange = function() {
+  var sel = el('mov-select');
+  var manualDiv = el('mov-manual-fields');
+  if (!sel) return;
+  if (sel.value === '__otro__') {
+    if (manualDiv) manualDiv.classList.remove('hidden');
+  } else {
+    if (manualDiv) manualDiv.classList.add('hidden');
+    var opt = sel.options[sel.selectedIndex];
+    if (opt && opt.dataset.zona && el('mov-zona')) el('mov-zona').value = opt.dataset.zona;
+  }
+};
+
 window.saveMovilidad = async function() {
   var a = A(); if (!a) return;
-  var n = el('mov-n').value.trim();
-  if (!n) { toast('Nombre obligatorio', 'err'); return; }
+  var sel = el('mov-select');
+  var n, link;
+  if (sel && sel.value && sel.value !== '__otro__') {
+    var opt = sel.options[sel.selectedIndex];
+    n = opt.dataset.nombre;
+    link = opt.dataset.link;
+  } else {
+    n = el('mov-n') ? el('mov-n').value.trim() : '';
+    link = el('mov-link') ? el('mov-link').value.trim() : '';
+  }
+  if (!n) { toast('Selecciona un ejercicio o escribe uno nuevo', 'err'); return; }
   var mov = {
     nombre: n,
     series: parseInt(el('mov-s').value) || 2,
     reps: el('mov-r').value || '10',
     zona: el('mov-zona').value,
     descanso: parseInt(el('mov-d').value) || 30,
-    link: el('mov-link') ? el('mov-link').value.trim() : '',
+    link: link || '',
     obs: el('mov-obs').value.trim()
   };
   await FP('alumnos/' + S.aid + '/dias_plan/' + S.dia + '/movilidad', mov);
@@ -1485,7 +1552,7 @@ window.setView = function(v, btn) {
   // Cerrar sidebar en mobile al elegir vista
   var sbM = document.getElementById('sb-main');
   if (sbM && sbM.classList.contains('open')) toggleSidebar();
-  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
+  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','bibmov','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1495,7 +1562,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',giftcards:'Giftcards',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',giftcards:'Giftcards',bibmov:'Biblioteca Movilidad',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1529,7 +1596,7 @@ function renderAll() {
     if (S.view === 'ficha') abtn('Editar', 'bg', function() { openAlModal(S.aid); });
   }
   if (S.view === 'bib') abtn('+ Agregar', 'bp', function() { el('m-bib').classList.remove('hidden'); });
-  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash' && S.view !== 'giftcards') { renderEmpty(); return; }
+  if (!a && S.view !== 'bib' && S.view !== 'pagos' && S.view !== 'profesionales' && S.view !== 'plantillas' && S.view !== 'beneficios' && S.view !== 'premios' && S.view !== 'ranking' && S.view !== 'dash' && S.view !== 'giftcards' && S.view !== 'bibmov') { renderEmpty(); return; }
   if (S.view === 'dash')  { if (a) rDash(a); else rDashGlobal(); }
   if (S.view === 'pauta') rPauta(a);
   if (S.view === 'cardio') rCardio(a);
@@ -1543,6 +1610,7 @@ function renderAll() {
   if (S.view === 'premios') rPremios();
   if (S.view === 'ranking') rRanking();
   if (S.view === 'giftcards') rGiftcards();
+  if (S.view === 'bibmov') rBibMov();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
@@ -5298,6 +5366,78 @@ window.toggleGiftcardEstado = async function(id, estadoActual) {
   await FU('giftcards/' + id, { estado: nuevo });
   toast(nuevo === 'listo' ? 'Marcado como listo' : 'Marcado como pendiente');
   rGiftcards();
+};
+
+// ── BIBLIOTECA DE MOVILIDAD ──────────────────────────────────────────────────
+function rBibMov() {
+  var e = el('vbibmov');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;">' +
+    '<span class="ct">Biblioteca de Movilidad</span>' +
+    '<button class="btn bp sm" onclick="el(\'m-add-bibmov\').classList.remove(\'hidden\')">+ Agregar ejercicio</button>' +
+    '</div>' +
+    '<div id="bibmov-container"></div>';
+
+  FG('biblioteca_movilidad').then(function(snap) {
+    var container = document.getElementById('bibmov-container');
+    if (!container) return;
+    var items = snap ? Object.entries(snap) : [];
+
+    if (!items.length) {
+      container.innerHTML = '<div class="card"><div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px;">Sin ejercicios aun. Agrega el primero con el boton verde.</div></div>';
+      return;
+    }
+
+    var zonas = {};
+    items.forEach(function(kv) {
+      var z = kv[1].zona || 'General';
+      if (!zonas[z]) zonas[z] = [];
+      zonas[z].push(kv);
+    });
+
+    var html = '';
+    Object.keys(zonas).sort().forEach(function(zona) {
+      html += '<div class="card" style="margin-bottom:12px;"><div class="ch"><span class="ct">' + zona + '</span></div><div>';
+      zonas[zona].forEach(function(kv) {
+        var id = kv[0], item = kv[1];
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:500;">' + item.nombre + '</div>' +
+          '</div>' +
+          (item.link ? '<a href="' + item.link + '" target="_blank" class="btn bg sm">▶ Video</a>' : '') +
+          '<button class="btn bg sm" onclick="delBibMov(\'' + id + '\')" style="color:var(--rd);">Eliminar</button>' +
+          '</div>';
+      });
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
+  });
+}
+
+window.saveBibMov = async function() {
+  var nombre = el('bibmov-nombre') ? el('bibmov-nombre').value.trim() : '';
+  if (!nombre) { toast('Nombre obligatorio', 'err'); return; }
+  var item = {
+    nombre: nombre,
+    zona: el('bibmov-zona') ? el('bibmov-zona').value : 'General',
+    link: el('bibmov-link') ? el('bibmov-link').value.trim() : ''
+  };
+  try {
+    await FP('biblioteca_movilidad', item);
+    ['bibmov-nombre','bibmov-link'].forEach(function(id){ if(el(id)) el(id).value=''; });
+    closeM('m-add-bibmov');
+    toast('Agregado a la biblioteca de movilidad');
+    rBibMov();
+  } catch (err) {
+    toast('Error al guardar: ' + (err.message||'revisa la consola'), 'err');
+  }
+};
+
+window.delBibMov = async function(id) {
+  if (!confirm('Eliminar este ejercicio de la biblioteca de movilidad?')) return;
+  await FR('biblioteca_movilidad/' + id);
+  toast('Eliminado');
+  rBibMov();
 };
 </script>
 </body>
