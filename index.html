@@ -476,7 +476,12 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px;">
       <div class="fg"><label class="fl">Series</label><input class="fi" id="ej-s" type="number" min="1" placeholder="4"></div>
-      <div class="fg"><label class="fl">Reps S1</label><input class="fi" id="ej-r" type="number" min="1" placeholder="10"></div>
+      <div class="fg"><label class="fl">Reps S1</label>
+        <input class="fi" id="ej-r" type="text" placeholder="10, Fallo o RIR 1">
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button type="button" class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="document.getElementById('ej-r').value='Fallo'">Fallo</button>
+          <button type="button" class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="document.getElementById('ej-r').value='RIR 1'">RIR 1</button>
+        </div></div>
       <div class="fg"><label class="fl">Peso kg</label><input class="fi" id="ej-p" type="number" min="0" step="0.5" placeholder="60"></div>
       <div class="fg"><label class="fl">Intervalo</label><input class="fi" id="ej-i" type="number" min="0" step="0.5" placeholder="2.5"></div>
       <div class="fg"><label class="fl">Desc. s</label><input class="fi" id="ej-d" type="number" min="0" step="15" placeholder="90"></div>
@@ -609,7 +614,12 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:8px;">
       <div class="fg"><label class="fl">Series</label><input class="fi" id="edit-s" type="number" min="1"></div>
-      <div class="fg"><label class="fl">Reps S1</label><input class="fi" id="edit-r" type="number" min="1"></div>
+      <div class="fg"><label class="fl">Reps S1</label>
+        <input class="fi" id="edit-r" type="text" placeholder="10, Fallo o RIR 1">
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button type="button" class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="document.getElementById('edit-r').value='Fallo'">Fallo</button>
+          <button type="button" class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="document.getElementById('edit-r').value='RIR 1'">RIR 1</button>
+        </div></div>
       <div class="fg"><label class="fl">Peso kg</label><input class="fi" id="edit-p" type="number" min="0" step="0.5"></div>
       <div class="fg"><label class="fl">Intervalo</label><input class="fi" id="edit-i" type="number" min="0" step="0.5"></div>
       <div class="fg"><label class="fl">Desc. s</label><input class="fi" id="edit-d" type="number" min="0" step="15"></div>
@@ -1636,8 +1646,19 @@ function calcPre(pre) {
   return ['sueno','estres','ayuno','sobre','dolor'].reduce(function(s, k) { return s + (pre && pre[k] ? 1 : 0); }, 0);
 }
 
+
+// ── PARSEO DE REPS (numero o texto tipo Fallo/RIR) ───────────────────────────
+function parseRepsInput(val) {
+  var v2 = (val || '').toString().trim();
+  var n = parseInt(v2);
+  if (!isNaN(n) && String(n) === v2) return n;
+  return v2 || 10;
+}
+
 function calcSem(ej, si, a, di) {
-  var reps = ej.reps, peso = parseFloat(ej.peso) || 0;
+  var repsEsTexto = (typeof ej.reps === 'string' && isNaN(parseInt(ej.reps)));
+  var reps = repsEsTexto ? ej.reps : (parseInt(ej.reps) || 10);
+  var peso = parseFloat(ej.peso) || 0;
   var iv = parseFloat(ej.intervalo) || 2.5;
   var idx = Math.min(si, 4);
   for (var s = 0; s < idx; s++) {
@@ -1645,10 +1666,12 @@ function calcSem(ej, si, a, di) {
     var dr = 0, dp = 0;
     if (p === 1) {
       dp = 1;
-      if (reps >= 16) dr = -5;
-      else if (reps >= 13) dr = 10 - reps;
-      else if (reps >= 10) dr = 8 - reps;
-      else dr = -2;
+      if (!repsEsTexto) {
+        if (reps >= 16) dr = -5;
+        else if (reps >= 13) dr = 10 - reps;
+        else if (reps >= 10) dr = 8 - reps;
+        else dr = -2;
+      }
     }
     else if (p === 2) { dr = 2; }
     else if (p === 3) { dr = 1; }
@@ -1661,7 +1684,7 @@ function calcSem(ej, si, a, di) {
       else if (tot === 2) dr -= 2;
       else if (tot > 2) { dr -= 2; dp -= 1; }
     }
-    reps = Math.max(1, reps + dr);
+    if (!repsEsTexto) reps = Math.max(1, reps + dr);
     if (peso === 0) dp = 0;
     peso = Math.max(0, parseFloat((peso + dp * iv).toFixed(1)));
     // Si el profe fijo manualmente el peso real de la semana siguiente, usarlo como nueva base
@@ -1672,7 +1695,10 @@ function calcSem(ej, si, a, di) {
   }
   var series = ej.series;
   if (si === 5) {
-    if (ej.requiereAprox) {
+    if (repsEsTexto) {
+      // No se puede reducir reps de texto (Fallo/RIR) - se reduce series en su lugar
+      series = Math.max(1, Math.round(ej.series * 0.6));
+    } else if (ej.requiereAprox) {
       // Compuestos pesados: mantiene series (para conservar la aproximacion), baja reps ~40%
       reps = Math.max(1, Math.round(reps * 0.6));
     } else {
@@ -1685,7 +1711,9 @@ function calcSem(ej, si, a, di) {
 
 function getTrend(ej, a, di) {
   var s1 = calcSem(ej, 0, a, di), s5 = calcSem(ej, 4, a, di);
-  var dr = s5.reps - s1.reps, dp = s5.peso - s1.peso;
+  var repsSonTexto = typeof s1.reps === 'string' || typeof s5.reps === 'string';
+  var dr = repsSonTexto ? 0 : (s5.reps - s1.reps);
+  var dp = s5.peso - s1.peso;
   if (dr > 0 || dp > 0) return { ic: '▲', col: 'var(--ac)' };
   if (dr < 0 || dp < 0) return { ic: '▼', col: 'var(--rd)' };
   return { ic: '=', col: 'var(--tx3)' };
@@ -2042,7 +2070,7 @@ window.saveEditEj = async function() {
     musculo:  el('edit-m').value,
     link:     el('edit-l').value.trim(),
     series:   parseInt(el('edit-s').value) || 3,
-    reps:     parseInt(el('edit-r').value) || 10,
+    reps:     parseRepsInput(el('edit-r').value),
     peso:     parseFloat(el('edit-p').value) || 0,
     intervalo: parseFloat(el('edit-i').value) || 2.5,
     descanso: parseInt(el('edit-d').value) || null,
@@ -2068,7 +2096,7 @@ window.saveEj = async function() {
   var ej = {
     nombre: n, musculo: v('ej-m'),
     series: parseInt(v('ej-s')) || 3,
-    reps: parseInt(v('ej-r')) || 10,
+    reps: parseRepsInput(v('ej-r')),
     peso: parseFloat(v('ej-p')) || 0,
     intervalo: parseFloat(v('ej-i')) || 2.5,
     link: v('ej-l').trim(),
@@ -2093,7 +2121,7 @@ window.delEj = async function(aid, di, ejId) {
 };
 
 window.updEj = async function(aid, di, ejId, k, val) {
-  var v2 = (k === 'series' || k === 'reps') ? (parseInt(val) || 0) : (k === 'peso' || k === 'intervalo') ? (parseFloat(val) || 0) : val;
+  var v2 = (k === 'series') ? (parseInt(val) || 0) : (k === 'reps') ? parseRepsInput(val) : (k === 'peso' || k === 'intervalo') ? (parseFloat(val) || 0) : val;
   await FU(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId, { [k]: v2 });
   var a2 = S.alumnos[aid];
   var dplan2 = (S._ciclo === 'siguiente' && a2.dias_plan_siguiente) ? a2.dias_plan_siguiente : a2.dias_plan;
@@ -3113,7 +3141,7 @@ function avRenderDia(a) {
           var iv2 = parseFloat(ej.intervalo) || 2.5;
           cs.peso = Math.max(0, parseFloat((cs.peso + mol.dp * iv2).toFixed(1)));
         }
-        if (mol.dr !== 0) cs.reps = Math.max(1, cs.reps + mol.dr);
+        if (mol.dr !== 0 && typeof cs.reps === 'number') cs.reps = Math.max(1, cs.reps + mol.dr);
         var perc=(ej.perc&&ej.perc[si]!=null)?ej.perc[si]:null;
         var desc2 = ej.descanso || 60;
 
