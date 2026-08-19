@@ -722,6 +722,26 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
   </div>
 </div>
 
+<div class="ov hidden" id="m-movextra">
+  <div class="modal">
+    <div class="mt">Agregar ejercicio a Movilidad Extra</div>
+    <input type="hidden" id="movextra-sesion-id">
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Selecciona de tu Biblioteca de Movilidad</label>
+      <select class="fs" id="movextra-select" onchange="onMovExtraSelectChange()">
+        <option value="">Cargando biblioteca...</option>
+      </select>
+    </div>
+    <div class="g2" style="margin-bottom:8px;">
+      <div class="fg"><label class="fl">Series</label><input class="fi" id="movextra-s" type="number" min="1" placeholder="2"></div>
+      <div class="fg"><label class="fl">Reps / Tiempo</label><input class="fi" id="movextra-r" placeholder="10 o 30s"></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-movextra')">Cancelar</button>
+      <button class="btn bp sm" onclick="saveMovExtra()">Agregar</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov hidden" id="m-add-bibmov">
   <div class="modal">
     <div class="mt">Agregar a Biblioteca de Movilidad</div>
@@ -2702,6 +2722,10 @@ function rFicha(a) {
     '<button class="btn bp sm" id="btn-guardar-nutricion">Guardar nutricion</button>' +
     '</div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
+    '<div class="ch"><span class="ct">Movilidad Extra (sesiones aparte)</span></div>' +
+    '<div id="movextra-container" style="padding:12px 14px;">Cargando...</div>' +
+    '</div>' +
+    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Creditos y logros</span>' +
     '<span style="font-size:13px;font-weight:600;color:var(--ac);">' + (a.creditos||0) + ' cred.</span></div>' +
     '<div style="padding:10px 14px;">' +
@@ -2751,6 +2775,9 @@ function rFicha(a) {
   // Bind guardar nutricion
   var _btnNut = document.getElementById('btn-guardar-nutricion');
   if (_btnNut) _btnNut.onclick = function() { guardarNutricion(); };
+
+  // Renderizar Movilidad Extra
+  rMovExtra(S.aid);
 
   (function(aid) {
     var zd = document.getElementById('zona-danger');
@@ -2843,8 +2870,8 @@ window.delAl = async function() {
 };
 
 // VISTA ALUMNO
-var AVV = ['resumen','pauta','cardio','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
-var AVL = ['Resumen','Mi Pauta','Mi Cardio','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
+var AVV = ['resumen','pauta','cardio','movextra','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
+var AVL = ['Resumen','Mi Pauta','Mi Cardio','Mi Movilidad','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
 
 function renderAV() {
   var a = S.alumnos[S.uid];
@@ -2874,6 +2901,7 @@ function renderAV() {
   if (S.avv === 'beneficios')  avBeneficios(a);
   if (S.avv === 'creditos')   avCreditos(a);
   if (S.avv === 'cardio')  avCardio(a);
+  if (S.avv === 'movextra')  avMovExtra(a);
   if (S.avv === 'nutricion')  avNutricion(a);
   if (S.avv === 'ficha')  avFicha2(a);
 }
@@ -5513,6 +5541,167 @@ window.ajustarPesoDesdeSemana = async function(aid, di, ejId, si, pesoCalculado)
   toast('Peso ajustado desde Semana ' + (si+1) + ' en adelante');
   rPauta(A());
 };
+
+// ── MOVILIDAD EXTRA (sesiones aparte, fuera del ciclo de dias) ──────────────
+function rMovExtra(aid) {
+  var container = document.getElementById('movextra-container');
+  if (!container || !aid) return;
+  var a = S.alumnos[aid];
+  if (!a) return;
+  var sesiones = a.movilidad_extra || {};
+  var ids = Object.keys(sesiones);
+
+  var html = '';
+  if (!ids.length) {
+    html += '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;">Sin sesiones aun. Crea una para armar un plan de movilidad aparte de la pauta normal.</div>';
+  } else {
+    ids.forEach(function(sid) {
+      var ses = sesiones[sid];
+      var ejs = ses.ejercicios || {};
+      var ejIds = Object.keys(ejs);
+      html += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+        '<span style="font-size:13px;font-weight:600;">' + ses.nombre + '</span>' +
+        '<div style="display:flex;gap:6px;">' +
+        '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="openMovExtraModal(\'' + sid + '\')">+ Ejercicio</button>' +
+        '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;color:var(--rd);" onclick="delMovExtraSesion(\'' + sid + '\')">Eliminar sesion</button>' +
+        '</div></div>';
+      if (!ejIds.length) {
+        html += '<div style="font-size:11px;color:var(--tx3);">Sin ejercicios aun.</div>';
+      } else {
+        ejIds.forEach(function(eid) {
+          var ej = ejs[eid];
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--bd);">' +
+            '<span style="font-size:12px;">' + ej.nombre + ' — ' + ej.series + 'x' + ej.reps + '</span>' +
+            '<button class="ico" style="font-size:11px;" onclick="delMovExtraEj(\'' + sid + '\',\'' + eid + '\')">✕</button>' +
+            '</div>';
+        });
+      }
+      html += '</div>';
+    });
+  }
+  html += '<div style="display:flex;gap:6px;margin-top:4px;">' +
+    '<input class="fi" id="movextra-nueva-sesion" placeholder="Nombre de la sesion (ej: Sesion A)" style="flex:1;">' +
+    '<button class="btn bp sm" onclick="crearMovExtraSesion()">+ Crear sesion</button>' +
+    '</div>';
+
+  container.innerHTML = html;
+}
+
+window.crearMovExtraSesion = async function() {
+  var nombre = el('movextra-nueva-sesion') ? el('movextra-nueva-sesion').value.trim() : '';
+  if (!nombre) { toast('Escribe un nombre para la sesion', 'err'); return; }
+  var aid = S.aid;
+  try {
+    await FP('alumnos/' + aid + '/movilidad_extra', { nombre: nombre, ejercicios: {} });
+    S.alumnos[aid] = await FG('alumnos/' + aid);
+    toast('Sesion creada');
+    rMovExtra(aid);
+  } catch (err) {
+    toast('Error: ' + (err.message||'revisa la consola'), 'err');
+  }
+};
+
+window.delMovExtraSesion = async function(sid) {
+  if (!confirm('Eliminar esta sesion completa de movilidad?')) return;
+  var aid = S.aid;
+  await FR('alumnos/' + aid + '/movilidad_extra/' + sid);
+  S.alumnos[aid] = await FG('alumnos/' + aid);
+  toast('Sesion eliminada');
+  rMovExtra(aid);
+};
+
+window.delMovExtraEj = async function(sid, eid) {
+  var aid = S.aid;
+  await FR('alumnos/' + aid + '/movilidad_extra/' + sid + '/ejercicios/' + eid);
+  S.alumnos[aid] = await FG('alumnos/' + aid);
+  toast('Ejercicio eliminado');
+  rMovExtra(aid);
+};
+
+window.openMovExtraModal = function(sid) {
+  el('movextra-sesion-id').value = sid;
+  ['movextra-s','movextra-r'].forEach(function(id){ if(el(id)) el(id).value=''; });
+  el('m-movextra').classList.remove('hidden');
+  var sel = el('movextra-select');
+  if (sel) {
+    sel.innerHTML = '<option value="">Cargando biblioteca...</option>';
+    FG('biblioteca_movilidad').then(function(snap) {
+      var items = snap ? Object.entries(snap) : [];
+      var opts = '<option value="">-- Selecciona un ejercicio --</option>';
+      items.forEach(function(kv) {
+        var id = kv[0], item = kv[1];
+        opts += '<option value="' + id + '" data-nombre="' + item.nombre.replace(/"/g,'') + '" data-link="' + (item.link||'').replace(/"/g,'') + '" data-zona="' + (item.zona||'General') + '">' + item.nombre + ' (' + (item.zona||'General') + ')</option>';
+      });
+      sel.innerHTML = opts;
+    });
+  }
+};
+
+window.onMovExtraSelectChange = function() {};
+
+window.saveMovExtra = async function() {
+  var sid = el('movextra-sesion-id').value;
+  var sel = el('movextra-select');
+  if (!sel || !sel.value) { toast('Selecciona un ejercicio', 'err'); return; }
+  var opt = sel.options[sel.selectedIndex];
+  var ej = {
+    nombre: opt.dataset.nombre,
+    link: opt.dataset.link,
+    zona: opt.dataset.zona,
+    series: parseInt(el('movextra-s').value) || 2,
+    reps: el('movextra-r').value || '10'
+  };
+  var aid = S.aid;
+  try {
+    await FP('alumnos/' + aid + '/movilidad_extra/' + sid + '/ejercicios', ej);
+    S.alumnos[aid] = await FG('alumnos/' + aid);
+    closeM('m-movextra');
+    toast('Ejercicio agregado');
+    rMovExtra(aid);
+  } catch (err) {
+    toast('Error: ' + (err.message||'revisa la consola'), 'err');
+  }
+};
+
+// ── VISTA ALUMNO: MI MOVILIDAD (sesiones aparte) ─────────────────────────────
+function avMovExtra(a) {
+  var e = el('av-content');
+  if (!e) return;
+  var sesiones = a.movilidad_extra || {};
+  var ids = Object.keys(sesiones);
+
+  if (!ids.length) {
+    e.innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:6px;">Sin sesiones de movilidad asignadas</div>' +
+      '<div style="font-size:12px;color:var(--tx2);">Tu entrenador aun no te ha armado un plan de movilidad aparte.</div></div>';
+    return;
+  }
+
+  var html = '<div style="font-size:12px;color:var(--tx2);margin-bottom:12px;">Estas sesiones son independientes de tu pauta normal. Hazlas cuando quieras, no afectan tu progreso ni tu percepcion.</div>';
+
+  ids.forEach(function(sid) {
+    var ses = sesiones[sid];
+    var ejs = ses.ejercicios || {};
+    var ejIds = Object.keys(ejs);
+    html += '<div class="card" style="margin-bottom:12px;"><div class="ch"><span class="ct">' + ses.nombre + '</span></div><div>';
+    if (!ejIds.length) {
+      html += '<div style="padding:14px;font-size:12px;color:var(--tx3);">Sin ejercicios aun.</div>';
+    } else {
+      ejIds.forEach(function(eid) {
+        var ej = ejs[eid];
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
+          '<div><div style="font-size:13px;font-weight:500;">' + ej.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--tx2);">' + ej.series + ' x ' + ej.reps + '</div></div>' +
+          (ej.link ? '<a href="' + ej.link + '" target="_blank" class="btn bg sm">▶</a>' : '') +
+          '</div>';
+      });
+    }
+    html += '</div></div>';
+  });
+
+  e.innerHTML = html;
+}
 </script>
 </body>
 </html>
