@@ -1565,7 +1565,18 @@ function renderSide() {
     var semActualSide = a.sem_actual !== undefined ? parseInt(a.sem_actual) : getSemanaActual(a);
     var semLabel = semActualSide !== null ? 'S' + (semActualSide + 1) : '';
     var diaLabel = semLabel ? 'D' + diaActualSide + ' ' + semLabel : 'D' + diaActualSide;
-    var indicador = '<span style="font-size:9px;color:var(--ac);background:var(--ac2);border:1px solid rgba(61,255,160,.2);border-radius:4px;padding:1px 5px;flex-shrink:0;margin-left:4px;font-family:monospace;">' + diaLabel + '</span>';
+    var totalSemSide = getSemanas(a);
+    var indCol = 'var(--ac)', indBg = 'var(--ac2)', indBd = 'rgba(61,255,160,.2)';
+    if (semActualSide !== null) {
+      if (semActualSide >= totalSemSide) {
+        // Semana de descarga - rojo
+        indCol = 'var(--rd)'; indBg = 'rgba(255,77,106,.12)'; indBd = 'rgba(255,77,106,.3)';
+      } else if (semActualSide === totalSemSide - 1) {
+        // Ultima semana de carga - amarillo
+        indCol = 'var(--am)'; indBg = 'rgba(255,184,48,.12)'; indBd = 'rgba(255,184,48,.3)';
+      }
+    }
+    var indicador = '<span style="font-size:9px;color:' + indCol + ';background:' + indBg + ';border:1px solid ' + indBd + ';border-radius:4px;padding:1px 5px;flex-shrink:0;margin-left:4px;font-family:monospace;">' + diaLabel + '</span>';
     var noLeidos = a.mensajes ? Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length : 0;
     var msgBadge = noLeidos > 0 ? '<span style="background:var(--rd);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;flex-shrink:0;margin-left:4px;">' + noLeidos + '</span>' : '';
     return '<div class="ai' + (S.aid === id ? ' on' : '') + '" onclick="selAl(\'' + id + '\')">' +
