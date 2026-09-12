@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#0d1117">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#080C10;--bg2:#0D1218;--bg3:#131920;--bg4:#1A2230;--bg5:#212C3A;--bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.12);--bd3:rgba(255,255,255,0.20);--tx:#E8EFF8;--tx2:#7A92AA;--tx3:#3D5268;--ac:#3DFFA0;--ac2:rgba(61,255,160,0.08);--am:#FFB830;--bl:#3DB8FF;--pu:#9B7BFF;--rd:#FF4D6A;--r:10px;--r2:16px;--r3:24px;}
+:root{--bg:#080C10;--bg2:#0D1218;--bg3:#131920;--bg4:#1A2230;--bg5:#212C3A;--bd:rgba(255,255,255,0.06);--bd2:rgba(255,255,255,0.12);--bd3:rgba(255,255,255,0.20);--tx:#E8EFF8;--tx2:#9AB2C8;--tx3:#6B8299;--ac:#3DFFA0;--ac2:rgba(61,255,160,0.08);--am:#FFB830;--bl:#3DB8FF;--pu:#9B7BFF;--rd:#FF4D6A;--r:10px;--r2:16px;--r3:24px;}
 body.light{--bg:#F0F4F8;--bg2:#FFFFFF;--bg3:#E8EEF4;--bg4:#D4DDE8;--bg5:#C8D4E0;--bd:rgba(0,0,0,0.08);--bd2:rgba(0,0,0,0.14);--bd3:rgba(0,0,0,0.22);--tx:#1A2230;--tx2:#4A6080;--tx3:#8A9AB0;--ac:#00A060;--ac2:rgba(0,160,96,0.1);--am:#B06800;--bl:#1878B8;--pu:#6040B8;--rd:#C01830;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;-webkit-font-smoothing:antialiased;}
@@ -139,6 +139,9 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .sbr{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;}
 .sbnav{padding:8px;flex:1;}
 .nsl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:.12em;text-transform:uppercase;padding:0 8px 6px;}
+.nsl-toggle{cursor:pointer;user-select:none;padding:6px 8px;margin-top:4px;}
+.nsl-toggle:hover{color:var(--tx2);}
+.nsec{margin-bottom:2px;}
 .nb{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--tx2);transition:all .12s;border:1px solid transparent;background:none;width:100%;text-align:left;margin-bottom:2px;}
 .nb:hover{background:var(--bg3);color:var(--tx);}
 .nb.on{background:var(--ac2);border-color:rgba(61,255,160,.15);color:var(--ac);font-weight:500;}
@@ -348,26 +351,55 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
       <div class="sbr">Panel del profe</div>
     </div>
     <nav class="sbnav">
-      <div style="margin-bottom:16px;">
-        <div class="nsl">Vistas</div>
-        <button class="nb on" onclick="setView('dash',this)"><div class="nd"></div>Dashboard</button>
-        <button class="nb" onclick="setView('pauta',this)"><div class="nd"></div>Pauta</button>
-        <button class="nb" onclick="setView('cardio',this)"><div class="nd"></div>Cardio</button>
-        <button class="nb" onclick="setView('eval',this)"><div class="nd"></div>Evaluaciones</button>
-        <button class="nb" onclick="setView('msgs',this)"><div class="nd"></div>Mensajes <span id="nmsg" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
-        <button class="nb" onclick="setView('pagos',this)"><div class="nd"></div>Pagos <span id="npagos" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
-        <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
-        <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
-        <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
-        <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
-        <button class="nb" onclick="setView('bibmov',this)"><div class="nd"></div>Biblioteca Movilidad</button>
-        <button class="nb" onclick="setView('premios',this)"><div class="nd"></div>Premios</button>
-        <button class="nb" onclick="setView('ranking',this)"><div class="nd"></div>Ranking</button>
-        <button class="nb" onclick="setView('giftcards',this)"><div class="nd"></div>Giftcards</button>
-        <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
-        <button class="nb" onclick="setView('ficha',this)"><div class="nd"></div>Ficha</button>
+      <button class="nb on" onclick="setView('dash',this)" style="margin-bottom:10px;"><div class="nd"></div>Dashboard</button>
+      <button class="nb" onclick="setView('ficha',this)" style="margin-bottom:14px;"><div class="nd"></div>Ficha</button>
+
+      <div class="nsec">
+        <div class="nsl nsl-toggle" onclick="toggleNavSec(this)">▾ Entrenamiento</div>
+        <div class="nsec-body">
+          <button class="nb" onclick="setView('pauta',this)"><div class="nd"></div>Pauta</button>
+          <button class="nb" onclick="setView('movextra',this)"><div class="nd"></div>Movilidad Extra</button>
+          <button class="nb" onclick="setView('cardio',this)"><div class="nd"></div>Cardio</button>
+          <button class="nb" onclick="setView('eval',this)"><div class="nd"></div>Evaluaciones</button>
+          <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
+        </div>
       </div>
-      <div>
+
+      <div class="nsec">
+        <div class="nsl nsl-toggle" onclick="toggleNavSec(this)">▾ Bibliotecas</div>
+        <div class="nsec-body">
+          <button class="nb" onclick="setView('bib',this)"><div class="nd"></div>Biblioteca</button>
+          <button class="nb" onclick="setView('bibmov',this)"><div class="nd"></div>Biblioteca Movilidad</button>
+          <button class="nb" onclick="setView('plantillas',this)"><div class="nd"></div>Plantillas</button>
+        </div>
+      </div>
+
+      <div class="nsec">
+        <div class="nsl nsl-toggle" onclick="toggleNavSec(this)">▾ Comunicacion</div>
+        <div class="nsec-body">
+          <button class="nb" onclick="setView('msgs',this)"><div class="nd"></div>Mensajes <span id="nmsg" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
+        </div>
+      </div>
+
+      <div class="nsec">
+        <div class="nsl nsl-toggle" onclick="toggleNavSec(this)">▾ Administracion</div>
+        <div class="nsec-body">
+          <button class="nb" onclick="setView('pagos',this)"><div class="nd"></div>Pagos <span id="npagos" class="hidden" style="background:var(--rd);color:#fff;border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace;font-weight:700;"></span></button>
+          <button class="nb" onclick="setView('giftcards',this)"><div class="nd"></div>Giftcards</button>
+          <button class="nb" onclick="setView('profesionales',this)"><div class="nd"></div>Profesionales</button>
+        </div>
+      </div>
+
+      <div class="nsec">
+        <div class="nsl nsl-toggle" onclick="toggleNavSec(this)">▾ Motivacion</div>
+        <div class="nsec-body">
+          <button class="nb" onclick="setView('beneficios',this)"><div class="nd"></div>Beneficios</button>
+          <button class="nb" onclick="setView('premios',this)"><div class="nd"></div>Premios</button>
+          <button class="nb" onclick="setView('ranking',this)"><div class="nd"></div>Ranking</button>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
         <div class="nsl">Alumnos</div>
         <div id="al-list"></div>
         <button class="addal" onclick="openAlModal(null)">＋ Nuevo alumno</button>
@@ -388,6 +420,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     </div>
     <div class="content" id="vdash"></div>
     <div class="content hidden" id="vpauta"></div>
+    <div class="content hidden" id="vmovextra"></div>
     <div class="content hidden" id="vcardio"></div>
     <div class="content hidden" id="veval"></div>
     <div class="content hidden" id="vmsgs"></div>
@@ -430,6 +463,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
       <div class="fg"><label class="fl">RUT</label><input class="fi" id="a-rut" placeholder="12.345.678-9"></div>
       <div class="fg"><label class="fl">Contraseña</label><input class="fi" id="a-pas" placeholder="Contraseña"></div>
       <div class="fg"><label class="fl">Edad</label><input class="fi" id="a-eda" type="number" placeholder="25"></div>
+      <div class="fg"><label class="fl">Peso (kg)</label><input class="fi" id="a-peso" type="number" step="0.1" placeholder="70"></div>
+      <div class="fg"><label class="fl">Estatura (cm)</label><input class="fi" id="a-estatura" type="number" placeholder="170"></div>
       <div class="fg"><label class="fl">Objetivo</label><select class="fs" id="a-obj"><option>Hipertrofia muscular</option><option>Bajar % de grasa</option><option>Rendimiento deportivo</option><option>Salud</option><option>Otro</option></select></div>
       <div class="fg"><label class="fl">Nivel</label><select class="fs" id="a-niv"><option>Principiante</option><option selected>Intermedio</option><option>Avanzado</option></select></div>
       <div class="fg"><label class="fl">Días / semana</label><input class="fi" id="a-dia" type="number" min="1" max="7" placeholder="4"></div>
@@ -724,9 +759,10 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 
 <div class="ov hidden" id="m-movextra">
   <div class="modal">
-    <div class="mt">Agregar ejercicio a Movilidad Extra</div>
+    <div class="mt" id="movextra-modal-titulo">Agregar ejercicio de Movilidad</div>
     <input type="hidden" id="movextra-sesion-id">
-    <div class="fg" style="margin-bottom:8px;"><label class="fl">Selecciona de tu Biblioteca de Movilidad</label>
+    <input type="hidden" id="movextra-tipo">
+    <div class="fg" style="margin-bottom:8px;"><label class="fl" id="movextra-select-label">Selecciona de tu Biblioteca de Movilidad</label>
       <select class="fs" id="movextra-select" onchange="onMovExtraSelectChange()">
         <option value="">Cargando biblioteca...</option>
       </select>
@@ -734,6 +770,12 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="g2" style="margin-bottom:8px;">
       <div class="fg"><label class="fl">Series</label><input class="fi" id="movextra-s" type="number" min="1" placeholder="2"></div>
       <div class="fg"><label class="fl">Reps / Tiempo</label><input class="fi" id="movextra-r" placeholder="10 o 30s"></div>
+      <div class="fg" style="grid-column:1/-1;"><label class="fl">Grupo/Circuito (opcional)</label><select class="fs" id="movextra-grupo">
+        <option value="">Sin grupo (individual)</option>
+        <option value="A">Circuito A</option>
+        <option value="B">Circuito B</option>
+        <option value="C">Circuito C</option>
+      </select></div>
     </div>
     <div class="mf">
       <button class="btn bg sm" onclick="closeM('m-movextra')">Cancelar</button>
@@ -1602,7 +1644,7 @@ window.setView = function(v, btn) {
   // Cerrar sidebar en mobile al elegir vista
   var sbM = document.getElementById('sb-main');
   if (sbM && sbM.classList.contains('open')) toggleSidebar();
-  ['dash','pauta','cardio','eval','msgs','pagos','vol','bib','bibmov','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
+  ['dash','pauta','movextra','cardio','eval','msgs','pagos','vol','bib','bibmov','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1660,13 +1702,14 @@ function renderAll() {
   if (S.view === 'premios') rPremios();
   if (S.view === 'ranking') rRanking();
   if (S.view === 'giftcards') rGiftcards();
+  if (S.view === 'movextra') rMovExtraStandalone(a);
   if (S.view === 'bibmov') rBibMov();
   if (S.view === 'plantillas') rPlantillas();
   if (S.view === 'ficha') rFicha(a);
 }
 
 function renderEmpty() {
-  ['dash','pauta','cardio','eval','msgs','vol','ficha'].forEach(function(id) {
+  ['dash','pauta','cardio','movextra','eval','msgs','vol','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) e.innerHTML = '<div style="text-align:center;padding:60px;color:var(--tx3);"><div style="font-size:36px;margin-bottom:14px;opacity:.3;">🏋️</div><div style="font-size:13px;color:var(--tx2);">Selecciona un alumno</div></div>';
   });
@@ -2733,10 +2776,6 @@ function rFicha(a) {
     '<button class="btn bp sm" id="btn-guardar-nutricion">Guardar nutricion</button>' +
     '</div></div>' +
     '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
-    '<div class="ch"><span class="ct">Movilidad Extra (sesiones aparte)</span></div>' +
-    '<div id="movextra-container" style="padding:12px 14px;">Cargando...</div>' +
-    '</div>' +
-    '<div class="card" style="max-width:560px;margin-bottom:12px;">' +
     '<div class="ch"><span class="ct">Creditos y logros</span>' +
     '<span style="font-size:13px;font-weight:600;color:var(--ac);">' + (a.creditos||0) + ' cred.</span></div>' +
     '<div style="padding:10px 14px;">' +
@@ -2787,8 +2826,7 @@ function rFicha(a) {
   var _btnNut = document.getElementById('btn-guardar-nutricion');
   if (_btnNut) _btnNut.onclick = function() { guardarNutricion(); };
 
-  // Renderizar Movilidad Extra
-  rMovExtra(S.aid);
+
 
   (function(aid) {
     var zd = document.getElementById('zona-danger');
@@ -2831,10 +2869,10 @@ window.verPlan = function(idx) {
 function openAlModal(id) {
   S.editId = id || null;
   el('m-al-t').textContent = id ? 'Editar alumno' : 'Nuevo alumno';
-  var fields = ['nom','rut','pas','eda','les','obs','dia','mon','pag'];
+  var fields = ['nom','rut','pas','eda','les','obs','dia','mon','pag','peso','estatura'];
   if (id && S.alumnos[id]) {
     var a2 = S.alumnos[id];
-    var map2 = {nom:'nombre',rut:'rut',pas:'pass',eda:'edad',les:'lesion',obs:'obs',dia:'dias',mon:'monto',pag:'pago'};
+    var map2 = {nom:'nombre',rut:'rut',pas:'pass',eda:'edad',les:'lesion',obs:'obs',dia:'dias',mon:'monto',pag:'pago',peso:'peso_inicial',estatura:'estatura'};
     fields.forEach(function(f) { var e2=el('a-'+f); if(e2) e2.value=a2[map2[f]]||''; });
     if(el('a-obj')) el('a-obj').value = a2.objetivo||'Hipertrofia muscular';
     if(el('a-niv')) el('a-niv').value = a2.nivel||'Intermedio';
@@ -2852,6 +2890,8 @@ window.saveAl = async function() {
   if (!rut || !pas) { toast('RUT y contrasena obligatorios','err'); return; }
   var datos = {
     nombre: nom, rut: rut, pass: pas, edad: v('a-eda'),
+    peso_inicial: parseFloat(v('a-peso')) || null,
+    estatura: parseFloat(v('a-estatura')) || null,
     objetivo: v('a-obj'), nivel: v('a-niv'),
     dias: parseInt(v('a-dia')) || DIAS,
     lugar: v('a-lug'), lesion: v('a-les') || 'Ninguna',
@@ -2947,6 +2987,25 @@ function avResumen(a) {
       '<div style="font-size:12px;color:var(--tx2);">Esta semana entrenas a menor volumen. Tu cuerpo consolida las ganancias y se prepara para el siguiente ciclo.</div>' +
       '</div>';
   }
+
+  // Calendario de constancia (estilo GitHub, ultimas 12 semanas)
+  html += (function() {
+    var ses = a.sesiones ? Object.values(a.sesiones) : [];
+    var fechasEntrenadas = {};
+    ses.forEach(function(s) { if (s.fecha) fechasEntrenadas[s.fecha] = true; });
+    var hoy2 = new Date();
+    var totalDias = 84;
+    var celdas = '';
+    for (var d = totalDias - 1; d >= 0; d--) {
+      var fecha2 = new Date(hoy2);
+      fecha2.setDate(fecha2.getDate() - d);
+      var fstr = fecha2.toISOString().slice(0,10);
+      var entrenado = !!fechasEntrenadas[fstr];
+      celdas += '<div title="' + fstr + (entrenado ? ' - Entrenaste' : '') + '" style="width:11px;height:11px;border-radius:3px;background:' + (entrenado ? 'var(--ac)' : 'var(--bg3)') + ';border:1px solid ' + (entrenado ? 'rgba(61,255,160,.4)' : 'var(--bd)') + ';"></div>';
+    }
+    return '<div class="card" style="margin-bottom:10px;"><div class="ch"><span class="ct">Constancia (ultimas 12 semanas)</span></div>' +
+      '<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(12,1fr);gap:3px;">' + celdas + '</div></div>';
+  })();
 
   // Lista compacta de ejercicios del dia actual
   if (diaData && diaData.ejercicios) {
@@ -3307,6 +3366,24 @@ function avRenderDia(a) {
     html += '</div></div>';
   }
 
+  html += renderPesoCorporalBlock(a);
+
+  var caloriasEst = estimarCalorias(a, diaData, si, diaHoy);
+  if (caloriasEst !== null) {
+    html += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span style="font-size:12px;color:var(--tx2);">Calorias estimadas de esta sesion</span>' +
+      '<span style="font-size:15px;font-weight:700;color:var(--am);">~' + caloriasEst + ' kcal</span>' +
+      '</div>';
+  } else {
+    html += '<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--tx2);">' +
+      'Agrega tu peso arriba para ver las calorias estimadas de tus entrenamientos.</div>';
+    if (!a.aviso_peso_enviado) {
+      FU('alumnos/' + S.uid, { aviso_peso_enviado: true });
+      a.aviso_peso_enviado = true;
+      avisarFaltaPeso(S.uid);
+    }
+  }
+
   // Finalizar dia button
   html += '<div id="finalizar-dia-wrap" style="margin-top:14px;">' +
     '<button class="btn bp" style="width:100%;justify-content:center;padding:12px;font-size:14px;" onclick="finalizarDia()">✓ Finalizar Dia ' + (S.avdia+1) + ' — Avanzar al siguiente</button>' +
@@ -3398,15 +3475,42 @@ window.finalizarDia = async function() {
   var totalSems = getSemanas(a);
   var idx2 = diasKeys.indexOf(diaActual);
   var nextDia = idx2 < diasKeys.length - 1 ? diasKeys[idx2 + 1] : null;
+
+  // Deteccion de records personales
+  if (!esDescarga && diaData2 && diaData2.ejercicios) {
+    var records = a.records || {};
+    var nuevosRecords = [];
+    Object.values(diaData2.ejercicios).forEach(function(ej) {
+      var calc = calcSem(ej, semActual, a, diaActual);
+      var pesoActual = calc.peso;
+      if (pesoActual > 0) {
+        var maxPrevio = records[ej.nombre] || 0;
+        if (pesoActual > maxPrevio) {
+          records[ej.nombre] = pesoActual;
+          nuevosRecords.push({ nombre: ej.nombre, peso: pesoActual });
+        }
+      }
+    });
+    if (nuevosRecords.length) {
+      await FU('alumnos/' + S.uid, { records: records });
+      S.alumnos[S.uid].records = records;
+      setTimeout(function() {
+        var t = el('toaster');
+        var lista = nuevosRecords.slice(0,2).map(function(r){ return r.nombre + ' (' + r.peso + 'kg)'; }).join(', ');
+        t.innerHTML = '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">🏆 Nuevo record personal!</div><div style="font-size:11px;opacity:.9;">' + lista + (nuevosRecords.length>2?' y '+(nuevosRecords.length-2)+' mas':'') + '</div>';
+        t.className = 'toast show tok';
+        setTimeout(function(){t.className='toast';t.textContent='';},5000);
+      }, 300);
+    }
+  }
+
   await FP('alumnos/' + S.uid + '/sesiones', { fecha: new Date().toISOString().slice(0,10), dia: diaActual, sem: semActual });
   if (nextDia === null) {
     var nextSem = semActual + 1;
     if (nextSem > totalSems) {
       await FU('alumnos/' + S.uid, { dia_actual: diasKeys[0], sem_actual: 0 });
       S.alumnos[S.uid].dia_actual = diasKeys[0]; S.alumnos[S.uid].sem_actual = 0;
-      var t = el('toaster');
-      t.innerHTML = '<div style="font-size:15px;font-weight:700;margin-bottom:5px;">Ciclo completado!</div><div style="font-size:11px;opacity:.85;">Habla con tu entrenador para el siguiente plan.</div>';
-      t.className = 'toast show tok'; setTimeout(function(){t.className='toast';t.textContent='';},7000);
+      mostrarCelebracionCiclo(a);
       await FP('notificaciones',{tipo:'ciclo_completo',alumno:a.nombre,fecha:new Date().toISOString(),leida:false});
     } else {
       await FU('alumnos/' + S.uid, { dia_actual: diasKeys[0], sem_actual: nextSem });
@@ -3584,6 +3688,25 @@ function avPesos(a) {
     });
   });
   if (!ejList2.length) { e.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3);">Sin ejercicios.</div>'; return; }
+  function svgLineChart(pesos2) {
+    var W=260, H=54, pad=6;
+    var vals = pesos2.map(function(p){return p.peso;});
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (min === max) { min -= 1; max += 1; }
+    var pts = vals.map(function(v,i) {
+      var x = pad + (i/(vals.length-1)) * (W-2*pad);
+      var y = H-pad - ((v-min)/(max-min)) * (H-2*pad);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    var path = 'M' + pts.join(' L');
+    var dots = pts.map(function(p,i) {
+      var xy = p.split(',');
+      return '<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="3" fill="'+(i===vals.length-1?'#3DFFA0':'#FFB830')+'"/>';
+    }).join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:54px;display:block;margin-bottom:8px;">' +
+      '<path d="'+path+'" fill="none" stroke="#FFB830" stroke-width="2"/>' + dots + '</svg>';
+  }
+
   var cards = ejList2.map(function(ej) {
     var pesos2 = [];
     for (var si2=0;si2<6;si2++) { var r=calcSem(ej,si2,a,ej._di); pesos2.push({sem:si2+1,peso:r.peso,reps:r.reps}); }
@@ -3596,6 +3719,7 @@ function avPesos(a) {
     return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
       '<div style="font-weight:600;font-size:13px;margin-bottom:1px;">' + ej.nombre + '</div>' +
       '<div style="font-size:9px;color:var(--tx3);font-family:monospace;margin-bottom:7px;">' + ej.musculo + '</div>' +
+      (hasPeso ? svgLineChart(pesos2) : '') +
       '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + pills + '</div></div>';
   }).join('');
   e.innerHTML = '<div class="card"><div class="ch"><span class="ct">Progresion semana a semana</span></div><div>' + cards + '</div></div>';
@@ -5574,16 +5698,19 @@ function rMovExtra(aid) {
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
         '<span style="font-size:13px;font-weight:600;">' + ses.nombre + '</span>' +
         '<div style="display:flex;gap:6px;">' +
-        '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="openMovExtraModal(\'' + sid + '\')">+ Ejercicio</button>' +
+        '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="openMovExtraModal(\'' + sid + '\',\'core\')">+ Core</button>' +
+        '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;" onclick="openMovExtraModal(\'' + sid + '\',\'movilidad\')">+ Movilidad</button>' +
         '<button class="btn bg sm" style="padding:2px 8px;font-size:10px;color:var(--rd);" onclick="delMovExtraSesion(\'' + sid + '\')">Eliminar sesion</button>' +
         '</div></div>';
       if (!ejIds.length) {
         html += '<div style="font-size:11px;color:var(--tx3);">Sin ejercicios aun.</div>';
       } else {
+        var gruposColor = {A:'var(--ac)',B:'var(--am)',C:'var(--pu)'};
         ejIds.forEach(function(eid) {
           var ej = ejs[eid];
+          var badge = ej.grupo ? '<span style="font-size:9px;font-weight:700;color:' + (gruposColor[ej.grupo]||'var(--tx3)') + ';background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;margin-right:6px;">Circuito ' + ej.grupo + '</span>' : '';
           html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--bd);">' +
-            '<span style="font-size:12px;">' + ej.nombre + ' — ' + ej.series + 'x' + ej.reps + '</span>' +
+            '<span style="font-size:12px;">' + badge + ej.nombre + ' — ' + ej.series + 'x' + ej.reps + '</span>' +
             '<button class="ico" style="font-size:11px;" onclick="delMovExtraEj(\'' + sid + '\',\'' + eid + '\')">✕</button>' +
             '</div>';
         });
@@ -5630,22 +5757,38 @@ window.delMovExtraEj = async function(sid, eid) {
   rMovExtra(aid);
 };
 
-window.openMovExtraModal = function(sid) {
+window.openMovExtraModal = function(sid, tipo) {
+  tipo = tipo || 'movilidad';
   el('movextra-sesion-id').value = sid;
-  ['movextra-s','movextra-r'].forEach(function(id){ if(el(id)) el(id).value=''; });
+  el('movextra-tipo').value = tipo;
+  ['movextra-s','movextra-r','movextra-grupo'].forEach(function(id){ if(el(id)) el(id).value=''; });
   el('m-movextra').classList.remove('hidden');
+  var tituloModal = el('movextra-modal-titulo');
+  if (tituloModal) tituloModal.textContent = tipo === 'core' ? 'Agregar ejercicio de Core' : 'Agregar ejercicio de Movilidad';
+  var labelSel = el('movextra-select-label');
+  if (labelSel) labelSel.textContent = tipo === 'core' ? 'Selecciona de tu Biblioteca (Core)' : 'Selecciona de tu Biblioteca de Movilidad';
+
   var sel = el('movextra-select');
   if (sel) {
     sel.innerHTML = '<option value="">Cargando biblioteca...</option>';
-    FG('biblioteca_movilidad').then(function(snap) {
-      var items = snap ? Object.entries(snap) : [];
+    if (tipo === 'core') {
+      var coreEjs = BLIB().filter(function(ej) { return ej.m === 'CORE'; });
       var opts = '<option value="">-- Selecciona un ejercicio --</option>';
-      items.forEach(function(kv) {
-        var id = kv[0], item = kv[1];
-        opts += '<option value="' + id + '" data-nombre="' + item.nombre.replace(/"/g,'') + '" data-link="' + (item.link||'').replace(/"/g,'') + '" data-zona="' + (item.zona||'General') + '">' + item.nombre + ' (' + (item.zona||'General') + ')</option>';
+      coreEjs.forEach(function(ej, idx2) {
+        opts += '<option value="core-' + idx2 + '" data-nombre="' + ej.n.replace(/"/g,'') + '" data-link="' + (ej.l||'').replace(/"/g,'') + '" data-zona="Core">' + ej.n + '</option>';
       });
       sel.innerHTML = opts;
-    });
+    } else {
+      FG('biblioteca_movilidad').then(function(snap) {
+        var items = snap ? Object.entries(snap) : [];
+        var opts = '<option value="">-- Selecciona un ejercicio --</option>';
+        items.forEach(function(kv) {
+          var id = kv[0], item = kv[1];
+          opts += '<option value="mov-' + id + '" data-nombre="' + item.nombre.replace(/"/g,'') + '" data-link="' + (item.link||'').replace(/"/g,'') + '" data-zona="' + (item.zona||'General') + '">' + item.nombre + ' (' + (item.zona||'General') + ')</option>';
+        });
+        sel.innerHTML = opts;
+      });
+    }
   }
 };
 
@@ -5661,7 +5804,8 @@ window.saveMovExtra = async function() {
     link: opt.dataset.link,
     zona: opt.dataset.zona,
     series: parseInt(el('movextra-s').value) || 2,
-    reps: el('movextra-r').value || '10'
+    reps: el('movextra-r').value || '10',
+    grupo: (el('movextra-grupo') ? el('movextra-grupo').value : '') || null
   };
   var aid = S.aid;
   try {
@@ -5699,10 +5843,12 @@ function avMovExtra(a) {
     if (!ejIds.length) {
       html += '<div style="padding:14px;font-size:12px;color:var(--tx3);">Sin ejercicios aun.</div>';
     } else {
+      var gruposColorAv = {A:'var(--ac)',B:'var(--am)',C:'var(--pu)'};
       ejIds.forEach(function(eid) {
         var ej = ejs[eid];
+        var badgeAv = ej.grupo ? '<span style="font-size:9px;font-weight:700;color:' + (gruposColorAv[ej.grupo]||'var(--tx3)') + ';background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;">Circuito ' + ej.grupo + '</span>' : '';
         html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bd);">' +
-          '<div><div style="font-size:13px;font-weight:500;">' + ej.nombre + '</div>' +
+          '<div>' + (badgeAv ? '<div style="margin-bottom:3px;">' + badgeAv + '</div>' : '') + '<div style="font-size:13px;font-weight:500;">' + ej.nombre + '</div>' +
           '<div style="font-size:11px;color:var(--tx2);">' + ej.series + ' x ' + ej.reps + '</div></div>' +
           (ej.link ? '<a href="' + ej.link + '" target="_blank" class="btn bg sm">▶</a>' : '') +
           '</div>';
@@ -5712,6 +5858,176 @@ function avMovExtra(a) {
   });
 
   e.innerHTML = html;
+}
+
+// ── CELEBRACION DE CICLO COMPLETADO ──────────────────────────────────────────
+window.mostrarCelebracionCiclo = function(a) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:var(--bg2);border:1px solid var(--ac);border-radius:20px;padding:36px 28px;max-width:340px;text-align:center;box-shadow:0 0 60px rgba(61,255,160,.25);">' +
+    '<div style="font-size:52px;margin-bottom:12px;">🏆</div>' +
+    '<div style="font-size:20px;font-weight:800;color:var(--ac);margin-bottom:8px;">Ciclo completado!</div>' +
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.5;">Terminaste todas las semanas de tu plan, incluida la descarga. Tu cuerpo consolido el progreso - ahora toca hablar con tu entrenador para el siguiente ciclo.</div>' +
+    '<button class="btn bp" id="btn-cerrar-celebracion" style="width:100%;justify-content:center;padding:12px;">Continuar</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  var btnCerrar = document.getElementById('btn-cerrar-celebracion');
+  if (btnCerrar) btnCerrar.addEventListener('click', function() { overlay.remove(); });
+};
+
+// ── PESO CORPORAL DEL ALUMNO + IMC ───────────────────────────────────────────
+function getPesoActualAlumno(a) {
+  var pc = a.pesos_corporales;
+  if (pc) {
+    var keys = Object.keys(pc).sort();
+    if (keys.length) return parseFloat(pc[keys[keys.length-1]].peso);
+  }
+  if (a.evaluaciones) {
+    var evs = Object.values(a.evaluaciones).filter(function(e){ return e.peso; }).sort(function(x,y){ return (y.fecha||'').localeCompare(x.fecha||''); });
+    if (evs.length) return parseFloat(evs[0].peso);
+  }
+  if (a.peso_inicial) return parseFloat(a.peso_inicial);
+  return null;
+}
+
+function calcIMC(peso, estaturaCm) {
+  if (!peso || !estaturaCm) return null;
+  var m = estaturaCm / 100;
+  return parseFloat((peso / (m*m)).toFixed(1));
+}
+
+function imcLabel(imc) {
+  if (imc == null) return '';
+  if (imc < 18.5) return 'Bajo peso';
+  if (imc < 25) return 'Normal';
+  if (imc < 30) return 'Sobrepeso';
+  return 'Obesidad';
+}
+
+window.savePesoCorporal = async function() {
+  var val = el('peso-corp-input') ? parseFloat(el('peso-corp-input').value) : null;
+  if (!val || val <= 0) { toast('Ingresa un peso valido', 'err'); return; }
+  var aid = S.uid;
+  var fecha = new Date().toISOString().slice(0,10);
+  try {
+    await FU('alumnos/' + aid + '/pesos_corporales/' + fecha, { peso: val, fecha: fecha });
+    S.alumnos[aid].pesos_corporales = S.alumnos[aid].pesos_corporales || {};
+    S.alumnos[aid].pesos_corporales[fecha] = { peso: val, fecha: fecha };
+    toast('Peso registrado');
+    if (el('peso-corp-input')) el('peso-corp-input').value = '';
+    if (S.avv === 'resumen') avResumen(S.alumnos[aid]);
+  } catch (err) {
+    toast('Error: ' + (err.message||'revisa la consola'), 'err');
+  }
+};
+
+function renderPesoCorporalBlock(a) {
+  var peso = getPesoActualAlumno(a);
+  var imc = a.estatura ? calcIMC(peso, a.estatura) : null;
+  var pc = a.pesos_corporales || {};
+  var keys = Object.keys(pc).sort();
+  var historial = keys.slice(-5).reverse().map(function(k) {
+    return '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2);padding:3px 0;"><span>' + pc[k].fecha + '</span><span>' + pc[k].peso + ' kg</span></div>';
+  }).join('');
+
+  return '<div class="card" style="margin-bottom:12px;"><div class="ch"><span class="ct">Mi Peso Corporal</span></div>' +
+    '<div style="padding:12px 14px;">' +
+    '<div style="display:flex;gap:16px;margin-bottom:12px;">' +
+    '<div><div style="font-size:9px;color:var(--tx3);">PESO ACTUAL</div><div style="font-size:18px;font-weight:700;color:var(--ac);">' + (peso ? peso + ' kg' : '—') + '</div></div>' +
+    (imc ? '<div><div style="font-size:9px;color:var(--tx3);">IMC</div><div style="font-size:18px;font-weight:700;">' + imc + '<span style="font-size:10px;color:var(--tx2);margin-left:4px;">' + imcLabel(imc) + '</span></div></div>' : '') +
+    '</div>' +
+    (a.estatura ? '' : '<div style="font-size:10px;color:var(--am);margin-bottom:8px;">Falta tu estatura para calcular el IMC - pidele a tu entrenador que la agregue.</div>') +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+    '<input class="fi" id="peso-corp-input" type="number" step="0.1" placeholder="Nuevo peso (kg)" style="flex:1;">' +
+    '<button class="btn bp sm" onclick="savePesoCorporal()">Registrar</button>' +
+    '</div>' +
+    (historial ? '<div style="border-top:1px solid var(--bd);padding-top:8px;">' + historial + '</div>' : '') +
+    '</div></div>';
+}
+
+// ── ESTIMACION DE CALORIAS QUEMADAS POR SESION ───────────────────────────────
+function estimarDuracionSegundos(diaData, a, si, diaIdx) {
+  var total = 0;
+  if (diaData && diaData.ejercicios) {
+    Object.values(diaData.ejercicios).forEach(function(ej) {
+      var cs = calcSem(ej, si, a, diaIdx);
+      var repsNum = (typeof cs.reps === 'number') ? cs.reps : 10;
+      var tiempoSerie = repsNum * 3;
+      var descanso = ej.descanso || 60;
+      total += cs.series * (tiempoSerie + descanso);
+    });
+  }
+  if (diaData && diaData.movilidad) {
+    Object.values(diaData.movilidad).forEach(function(m) {
+      var repsStr = (m.reps || '10').toString();
+      var segsMatch = repsStr.match(/(\d+)\s*s/i);
+      var tiempoRep = segsMatch ? parseInt(segsMatch[1]) : (parseInt(repsStr) || 10) * 2;
+      total += (m.series || 1) * (tiempoRep + (m.descanso || 20));
+    });
+  }
+  return total;
+}
+
+function estimarCalorias(a, diaData, si, diaIdx) {
+  var peso = getPesoActualAlumno(a);
+  if (!peso) return null;
+  var segundos = estimarDuracionSegundos(diaData, a, si, diaIdx);
+  var horas = segundos / 3600;
+  var MET = 5;
+  return Math.round(MET * peso * horas);
+}
+
+window.avisarFaltaPeso = async function(aid) {
+  await FP('alumnos/' + aid + '/mensajes', {
+    texto: 'Para calcular las calorias aproximadas que quemas en cada entrenamiento, agrega tu peso en la seccion "Mi Peso Corporal" dentro de Resumen.',
+    fecha: new Date().toISOString(), de: 'profe', leido: false
+  });
+};
+
+// ── ACORDEON DEL SIDEBAR ──────────────────────────────────────────────────────
+window.toggleNavSec = function(labelEl) {
+  var sec = labelEl.parentElement;
+  var body = sec.querySelector('.nsec-body');
+  var abierto = !sec.classList.contains('nsec-cerrada');
+  if (abierto) {
+    sec.classList.add('nsec-cerrada');
+    body.style.display = 'none';
+    labelEl.textContent = labelEl.textContent.replace('▾', '▸');
+  } else {
+    sec.classList.remove('nsec-cerrada');
+    body.style.display = '';
+    labelEl.textContent = labelEl.textContent.replace('▸', '▾');
+  }
+  var key = labelEl.textContent.replace('▾','').replace('▸','').trim();
+  var cerradas = JSON.parse(localStorage.getItem('hft-nav-cerradas') || '[]');
+  if (abierto) { if (cerradas.indexOf(key)===-1) cerradas.push(key); }
+  else { cerradas = cerradas.filter(function(k){return k!==key;}); }
+  localStorage.setItem('hft-nav-cerradas', JSON.stringify(cerradas));
+};
+
+function restaurarNavAcordeon() {
+  var cerradas = JSON.parse(localStorage.getItem('hft-nav-cerradas') || '[]');
+  document.querySelectorAll('.nsl-toggle').forEach(function(labelEl) {
+    var key = labelEl.textContent.replace('▾','').replace('▸','').trim();
+    if (cerradas.indexOf(key) > -1) {
+      var sec = labelEl.parentElement;
+      var body = sec.querySelector('.nsec-body');
+      sec.classList.add('nsec-cerrada');
+      body.style.display = 'none';
+      labelEl.textContent = '▸ ' + key;
+    }
+  });
+}
+setTimeout(restaurarNavAcordeon, 300);
+
+// ── VISTA INDEPENDIENTE DE MOVILIDAD EXTRA (sidebar) ─────────────────────────
+function rMovExtraStandalone(a) {
+  var e = el('vmovextra');
+  if (!e) return;
+  e.innerHTML = '<div class="ch" style="margin-bottom:12px;"><span class="ct">Movilidad Extra' + (a ? ' — ' + a.nombre : '') + '</span></div>' +
+    '<div id="movextra-container">Cargando...</div>';
+  if (a) rMovExtra(S.aid);
 }
 </script>
 </body>
