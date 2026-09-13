@@ -3079,6 +3079,25 @@ function avResumen(a) {
         '</div></div></div>';
     }
   }
+
+  html += renderPesoCorporalBlock(a);
+
+  var caloriasEst = estimarCalorias(a, diaData, si, diaHoy);
+  if (caloriasEst !== null) {
+    html += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<span style="font-size:12px;color:var(--tx2);">Calorias estimadas de esta sesion</span>' +
+      '<span style="font-size:15px;font-weight:700;color:var(--am);">~' + caloriasEst + ' kcal</span>' +
+      '</div>';
+  } else {
+    html += '<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--tx2);">' +
+      'Agrega tu peso arriba para ver las calorias estimadas de tus entrenamientos.</div>';
+    if (!a.aviso_peso_enviado) {
+      FU('alumnos/' + S.uid, { aviso_peso_enviado: true });
+      a.aviso_peso_enviado = true;
+      avisarFaltaPeso(S.uid);
+    }
+  }
+
   e.innerHTML = html;
 }
 
@@ -3102,6 +3121,7 @@ function avPauta(a) {
     }
   }
   var totalSemsAv = getSemanas(a);
+  var semActualAv = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
   var SL_AV = [];
   for (var _si=0; _si<totalSemsAv; _si++) SL_AV.push('S'+(_si+1));
   SL_AV.push('S'+(totalSemsAv+1)+' Desc.');
@@ -3111,7 +3131,6 @@ function avPauta(a) {
     return '<button class="tab' + (i===totalSemsAv?' desc':'') + (isActSem?' on':'') + '" style="' + lockSt + '" onclick="avSem('+i+')">' + l + (isActSem?'':' ?') + '</button>';
   }).join('');
   var diaActualAv = a.dia_actual !== undefined ? parseInt(a.dia_actual) : 0;
-  var semActualAv = a.sem_actual !== undefined ? parseInt(a.sem_actual) : 0;
   S.avdia = diaActualAv;
   S.avsem = semActualAv;
   var dayTabs2 = '';
@@ -3364,24 +3383,6 @@ function avRenderDia(a) {
       html += '</div>';
     });
     html += '</div></div>';
-  }
-
-  html += renderPesoCorporalBlock(a);
-
-  var caloriasEst = estimarCalorias(a, diaData, si, diaHoy);
-  if (caloriasEst !== null) {
-    html += '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
-      '<span style="font-size:12px;color:var(--tx2);">Calorias estimadas de esta sesion</span>' +
-      '<span style="font-size:15px;font-weight:700;color:var(--am);">~' + caloriasEst + ' kcal</span>' +
-      '</div>';
-  } else {
-    html += '<div style="background:rgba(255,184,48,.08);border:1px solid rgba(255,184,48,.2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--tx2);">' +
-      'Agrega tu peso arriba para ver las calorias estimadas de tus entrenamientos.</div>';
-    if (!a.aviso_peso_enviado) {
-      FU('alumnos/' + S.uid, { aviso_peso_enviado: true });
-      a.aviso_peso_enviado = true;
-      avisarFaltaPeso(S.uid);
-    }
   }
 
   // Finalizar dia button
