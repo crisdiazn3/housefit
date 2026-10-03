@@ -149,6 +149,9 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .nb.on .nd{background:var(--ac);}
 .ai{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:8px;cursor:pointer;font-size:11px;color:var(--tx2);border:1px solid transparent;transition:all .12s;margin-bottom:2px;}
 .ai:hover{background:var(--bg3);color:var(--tx);}
+.lockbtn{font-size:10px;flex-shrink:0;margin-left:4px;opacity:.35;cursor:pointer;transition:opacity .12s;}
+.lockbtn:hover{opacity:1;}
+.lockbtn.on{opacity:1;}
 .ai.on{background:var(--ac2);border-color:rgba(61,255,160,.15);color:var(--ac);}
 .av{width:22px;height:22px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--tx2);flex-shrink:0;font-family:'DM Mono',monospace;}
 .ai.on .av{background:rgba(61,255,160,.15);color:var(--ac);}
@@ -185,6 +188,29 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 /* STATS */
 .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
 .sc{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:12px;}
+.stat2{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:12px;}
+.stat2 .n{font-size:22px;font-weight:700;line-height:1;font-family:'DM Mono',monospace;}
+.stat2 .l{font-size:10px;color:var(--tx2);margin-top:6px;}
+.stat2 .delta{font-size:9px;color:var(--tx3);margin-top:3px;}
+.caldots{display:flex;flex-wrap:wrap;gap:4px;}
+.dotday2{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'DM Mono',monospace;color:var(--tx3);background:var(--bg3);border:1px solid var(--bd);}
+.dotday2.done{background:var(--ac2);border-color:var(--ac);color:var(--ac);font-weight:600;}
+@media(max-width:700px){.g4rm{grid-template-columns:repeat(2,1fr)!important;}}
+.exgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+.excard2{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:12px 14px;}
+.exhead2{margin-bottom:8px;}
+.exnow2{display:flex;align-items:baseline;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
+.exnow2 .w{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;}
+.exnow2 .u{font-size:11px;color:var(--tx3);}
+.exdelta{font-size:10.5px;font-weight:600;margin-left:4px;}
+.exdelta.up{color:var(--ac);}
+.exdelta.down{color:var(--rd);}
+.exdelta.flat{color:var(--tx3);}
+.exbars{display:flex;align-items:flex-end;gap:4px;height:44px;}
+.exbars-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+.exbars-bar{width:100%;border-radius:4px 4px 2px 2px;background:var(--bg5);min-height:4px;transition:height .2s;}
+.exbars-bar.on{box-shadow:0 0 0 1px rgba(255,255,255,.08);}
+.exbars-col span{font-size:7.5px;color:var(--tx3);font-family:'DM Mono',monospace;}
 .sl{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-bottom:6px;}
 .sv{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;line-height:1;}
 .ss{font-size:11px;color:var(--tx2);margin-top:4px;}
@@ -225,6 +251,10 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 
 /* TOAST */
 .toast{position:fixed;bottom:18px;right:18px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r2);padding:9px 14px;font-size:13px;color:var(--tx);z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:all .3s;}
+#msgalert-bar{position:fixed;top:0;left:0;right:0;z-index:3000;background:var(--rd);color:#fff;font-size:12.5px;font-weight:600;padding:9px 16px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 14px rgba(255,77,106,.4);animation:msgalertPulse 1.8s ease-in-out infinite;}
+#msgalert-bar:hover{filter:brightness(1.08);}
+@keyframes msgalertPulse{0%,100%{box-shadow:0 2px 14px rgba(255,77,106,.4);}50%{box-shadow:0 2px 22px rgba(255,77,106,.8);}}
+#msgalert-bar.hidden{display:none;}
 .toast.show{transform:translateY(0);opacity:1;}
 .tok{border-color:rgba(61,255,160,.3);color:var(--ac);}
 .terr{border-color:rgba(255,77,106,.3);color:var(--rd);}
@@ -343,6 +373,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 
 <!-- PROFE APP -->
 <div id="app" class="hidden">
+  <div id="msgalert-bar" class="hidden" onclick="irAMensajesPendientes()"></div>
   <div id="hamburger-btn" onclick="toggleSidebar()">☰</div>
   <div id="sb-overlay" onclick="toggleSidebar()"></div>
   <aside class="sb" id="sb-main">
@@ -362,6 +393,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
           <button class="nb" onclick="setView('cardio',this)"><div class="nd"></div>Cardio</button>
           <button class="nb" onclick="setView('eval',this)"><div class="nd"></div>Evaluaciones</button>
           <button class="nb" onclick="setView('vol',this)"><div class="nd"></div>Volumen</button>
+          <button class="nb" onclick="setView('resumen_mensual',this)"><div class="nd"></div>Resumen Mensual</button>
         </div>
       </div>
 
@@ -401,6 +433,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 
       <div style="margin-top:16px;">
         <div class="nsl">Alumnos</div>
+        <input class="fi" id="al-q" placeholder="Buscar alumno..." style="font-size:11px;padding:6px 10px;margin-bottom:8px;" oninput="filterAlumnos(this.value)">
         <div id="al-list"></div>
         <button class="addal" onclick="openAlModal(null)">＋ Nuevo alumno</button>
       </div>
@@ -426,6 +459,7 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="content hidden" id="vmsgs"></div>
     <div class="content hidden" id="vpagos"></div>
     <div class="content hidden" id="vvol"></div>
+    <div class="content hidden" id="vresumen_mensual"></div>
     <div class="content hidden" id="vbib"></div>
     <div class="content hidden" id="vplantillas"></div>
     <div class="content hidden" id="vprofesionales"></div>
@@ -565,6 +599,33 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="mt">Enviar mensaje</div>
     <div class="fg" style="margin-bottom:12px;"><label class="fl">Mensaje</label><textarea class="fta" id="msg-txt" placeholder="Escribe tu mensaje..." style="min-height:80px;"></textarea></div>
     <div class="mf"><button class="btn bg sm" onclick="closeM('m-msg')">Cancelar</button><button class="btn bp sm" onclick="sendMsg()">Enviar</button></div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-bloquear-alumno">
+  <div class="modal" style="width:420px;">
+    <div class="mt">Bloquear alumno</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;" id="bq-info"></div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Mensaje que vera el alumno</label>
+      <textarea class="fta" id="bq-mensaje" style="min-height:70px;" placeholder="Ej: Tu asesoria vencio. Escribeme para renovar y seguir entrenando."></textarea>
+    </div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-bloquear-alumno')">Cancelar</button>
+      <button class="btn bp sm" style="background:var(--rd);" onclick="confirmBloquearAlumno()">Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-ajustar-peso">
+  <div class="modal" style="width:380px;">
+    <div class="mt">Ajustar peso real</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;" id="ap-info"></div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Peso real (kg)</label><input class="fi" id="ap-peso" type="number" step="0.5" inputmode="decimal"></div>
+    <div style="font-size:10px;color:var(--tx3);margin-bottom:8px;">Las semanas anteriores no se ven afectadas.</div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-ajustar-peso')">Cancelar</button>
+      <button class="btn bp sm" onclick="confirmAjustarPeso()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -1601,17 +1662,48 @@ function checkPagos() {
 
 function checkMensajes() {
   var total = 0;
-  Object.values(S.alumnos).forEach(function(a) {
+  var alumnosConMsg = [];
+  Object.entries(S.alumnos).forEach(function(kv) {
+    var id = kv[0], a = kv[1];
     if (!a.mensajes) return;
-    total += Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length;
+    var noLeidos = Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length;
+    if (noLeidos) { total += noLeidos; alumnosConMsg.push({ id: id, nombre: a.nombre }); }
   });
   var n = el('nmsg');
   if (n) { n.classList.toggle('hidden', total === 0); n.textContent = total; }
+
+  var bar = el('msgalert-bar');
+  if (bar) {
+    if (total === 0) {
+      bar.classList.add('hidden');
+    } else {
+      var txt;
+      if (alumnosConMsg.length === 1) {
+        txt = '🔔 ' + alumnosConMsg[0].nombre + ' te escribió (' + total + (total===1?' mensaje':' mensajes') + ' sin leer) — Ver';
+      } else {
+        var nombres = alumnosConMsg.slice(0,3).map(function(x){return x.nombre.split(' ')[0];}).join(', ');
+        txt = '🔔 ' + total + ' mensajes sin leer de ' + alumnosConMsg.length + ' alumnos (' + nombres + (alumnosConMsg.length>3?'...':'') + ') — Ver';
+      }
+      bar.textContent = txt;
+      bar.classList.remove('hidden');
+      window._alumnosConMsgPendiente = alumnosConMsg;
+    }
+  }
 }
+
+window.irAMensajesPendientes = function() {
+  var lista = window._alumnosConMsgPendiente || [];
+  if (!lista.length) return;
+  selAl(lista[0].id);
+  setView('msgs');
+};
 
 function renderSide() {
   var list = el('al-list');
-  list.innerHTML = Object.entries(S.alumnos).map(function(kv) {
+  var entradas = Object.entries(S.alumnos).sort(function(x, y) {
+    return (x[1].nombre || '').localeCompare(y[1].nombre || '', 'es', { sensitivity: 'base' });
+  });
+  list.innerHTML = entradas.map(function(kv) {
     var id = kv[0], a = kv[1];
     var ini = a.nombre.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0,2);
     var ps = pagoSt(a);
@@ -1637,15 +1729,27 @@ function renderSide() {
     var indicador = '<span style="font-size:9px;color:' + indCol + ';background:' + indBg + ';border:1px solid ' + indBd + ';border-radius:4px;padding:1px 5px;flex-shrink:0;margin-left:4px;font-family:monospace;">' + diaLabel + '</span>';
     var noLeidos = a.mensajes ? Object.values(a.mensajes).filter(function(m){ return m.de === 'alumno' && !m.leido; }).length : 0;
     var msgBadge = noLeidos > 0 ? '<span style="background:var(--rd);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;flex-shrink:0;margin-left:4px;">' + noLeidos + '</span>' : '';
-    return '<div class="ai' + (S.aid === id ? ' on' : '') + '" onclick="selAl(\'' + id + '\')">' +
+    var lockBtn = a.bloqueado
+      ? '<span title="Bloqueado - click para desbloquear" class="lockbtn on" onclick="event.stopPropagation();toggleBloqueoAlumno(\'' + id + '\')">🔒</span>'
+      : '<span title="Bloquear alumno" class="lockbtn" onclick="event.stopPropagation();toggleBloqueoAlumno(\'' + id + '\')">🔓</span>';
+    return '<div class="ai' + (S.aid === id ? ' on' : '') + '" data-q="' + a.nombre.toLowerCase() + '" onclick="selAl(\'' + id + '\')">' +
       '<div class="av">' + ini + '</div>' +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + a.nombre + '</span>' +
-      msgBadge + indicador + dot + '</div>';
+      msgBadge + lockBtn + indicador + dot + '</div>';
   }).join('');
+  var q = el('al-q');
+  if (q && q.value) filterAlumnos(q.value);
 }
 
+window.filterAlumnos = function(q) {
+  var qq = (q || '').toLowerCase().trim();
+  document.querySelectorAll('#al-list .ai').forEach(function(row) {
+    row.style.display = (!qq || (row.dataset.q||'').indexOf(qq) > -1) ? '' : 'none';
+  });
+};
+
 window.selAl = async function(id) {
-  S.aid = id; S.dia = 0; S.sem = 0; S.resumenSem = undefined;
+  S.aid = id; S.dia = 0; S.sem = 0; S.resumenSem = undefined; S.resumenMesOffset = 0;
   S.alumnos[id] = await FG('alumnos/' + id);
   renderSide(); renderAll();
 };
@@ -1660,7 +1764,7 @@ window.setView = function(v, btn) {
   // Cerrar sidebar en mobile al elegir vista
   var sbM = document.getElementById('sb-main');
   if (sbM && sbM.classList.contains('open')) toggleSidebar();
-  ['dash','pauta','movextra','cardio','eval','msgs','pagos','vol','bib','bibmov','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
+  ['dash','pauta','movextra','cardio','eval','msgs','pagos','vol','resumen_mensual','bib','bibmov','plantillas','profesionales','beneficios','premios','ranking','giftcards','ficha'].forEach(function(id) {
     var e = el('v' + id);
     if (e) {
       if (id === v) e.classList.remove('hidden');
@@ -1670,7 +1774,7 @@ window.setView = function(v, btn) {
   renderAll();
 };
 
-var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',giftcards:'Giftcards',bibmov:'Biblioteca Movilidad',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
+var VTITLES = {dash:'Dashboard',pauta:'Pauta',cardio:'Cardio',giftcards:'Giftcards',bibmov:'Biblioteca Movilidad',eval:'Evaluaciones',msgs:'Mensajes',pagos:'Pagos',vol:'Volumen',resumen_mensual:'Resumen Mensual',bib:'Biblioteca',plantillas:'Plantillas de Pautas',ficha:'Ficha',profesionales:'Profesionales',beneficios:'Beneficios',premios:'Premios y Desafios',ranking:'Ranking'};
 
 function renderAll() {
   el('vtitle').textContent = VTITLES[S.view] || S.view;
@@ -1684,6 +1788,7 @@ function renderAll() {
     act.appendChild(b);
   }
   if (a) {
+    abtn(a.bloqueado ? '🔓 Desbloquear alumno' : '🔒 Bloquear alumno', a.bloqueado ? 'bg' : 'brd', function() { toggleBloqueo(); });
     if (S.view === 'pauta') {
       abtn('+ Ejercicio', 'bp', function() { openEjModal(S.aid, S.dia); });
       abtn('Agrupar seleccionados', 'bg', function() { agruparSeleccionados(); });
@@ -1712,6 +1817,7 @@ function renderAll() {
   if (S.view === 'msgs')  rMsgs(a);
   if (S.view === 'pagos') rPagos();
   if (S.view === 'vol')   rVol(a);
+  if (S.view === 'resumen_mensual') rResumenMensual(a);
   if (S.view === 'bib')   rBib();
   if (S.view === 'profesionales') rProfesionales();
   if (S.view === 'beneficios') rBeneficios();
@@ -2626,6 +2732,204 @@ function rVol(a) {
     '</div>';
 }
 
+// ── RESUMEN MENSUAL ──────────────────────────────────────────────────────────
+function getMesInfo(offset) {
+  var hoy = new Date();
+  var d = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
+  var y = d.getFullYear(), m = d.getMonth();
+  var diasEnMes = new Date(y, m + 1, 0).getDate();
+  var nombreMes = d.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  return { y: y, m: m, diasEnMes: diasEnMes, nombreMes: nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) };
+}
+
+function getRachaActualRM(a) {
+  if (!a || !a.sesiones) return 0;
+  var ses = Object.values(a.sesiones).filter(function(s){return s.fecha;}).sort(function(x,y){return y.fecha.localeCompare(x.fecha);});
+  var racha = 0;
+  var ref2 = new Date(); ref2.setDate(ref2.getDate() - 1);
+  for (var i = 0; i < ses.length; i++) {
+    var d2 = new Date(ses[i].fecha);
+    if (Math.round((ref2 - d2) / 86400000) <= 1) { racha++; ref2 = d2; } else break;
+  }
+  return racha;
+}
+
+function getMejorRachaRM(a) {
+  if (!a || !a.sesiones) return 0;
+  var fechas = Object.values(a.sesiones).map(function(s){return s.fecha;}).filter(Boolean).sort();
+  var mejor = 0, actual = 0, prev = null;
+  fechas.forEach(function(f) {
+    var d = new Date(f);
+    if (prev === null) { actual = 1; }
+    else {
+      var diff = Math.round((d - prev) / 86400000);
+      actual = (diff <= 1) ? actual + 1 : 1;
+    }
+    if (actual > mejor) mejor = actual;
+    prev = d;
+  });
+  return mejor;
+}
+
+window.cambiarMesResumen = function(delta) {
+  S.resumenMesOffset = (S.resumenMesOffset || 0) + delta;
+  if (S.resumenMesOffset > 0) S.resumenMesOffset = 0; // no permitir meses futuros
+  rResumenMensual(A());
+};
+
+window.copiarResumenMensual = function() {
+  var txt = el('resumen-mensual-copytext');
+  if (!txt) return;
+  var val = txt.getAttribute('data-raw') || txt.textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(function(){ toast('Copiado al portapapeles'); }, function(){ toast('No se pudo copiar','err'); });
+  } else {
+    toast('No se pudo copiar','err');
+  }
+};
+
+function rResumenMensual(a) {
+  var e = el('vresumen_mensual');
+  if (!e) return;
+  if (!a) { e.innerHTML = '<div style="text-align:center;padding:60px;color:var(--tx3);">Selecciona un alumno</div>'; return; }
+  if (S.resumenMesOffset === undefined) S.resumenMesOffset = 0;
+  var info = getMesInfo(S.resumenMesOffset);
+
+  var sesionesTodas = a.sesiones ? Object.values(a.sesiones).filter(function(s){return s.fecha;}) : [];
+  var sesionesMes = sesionesTodas.filter(function(s) {
+    var d = new Date(s.fecha + 'T00:00:00');
+    return d.getFullYear() === info.y && d.getMonth() === info.m;
+  }).sort(function(x,y){ return x.fecha.localeCompare(y.fecha); });
+
+  var diasConfigurados = Object.keys(a.dias_plan || {}).length;
+  var hoy = new Date();
+  var esMesActual = (info.y === hoy.getFullYear() && info.m === hoy.getMonth());
+  var diasTranscurridos = esMesActual ? hoy.getDate() : info.diasEnMes;
+  var esperadas = diasConfigurados ? Math.round(diasConfigurados * (diasTranscurridos / 7)) : null;
+  var hechas = sesionesMes.length;
+  var adherencia = (esperadas && esperadas > 0) ? Math.min(100, Math.round(hechas / esperadas * 100)) : null;
+
+  var racha = getRachaActualRM(a);
+  var mejorRacha = getMejorRachaRM(a);
+
+  // Percepcion promedio del mes (a partir de las semanas/dias de las sesiones registradas)
+  var percs = [];
+  sesionesMes.forEach(function(s) {
+    var dia = a.dias_plan && a.dias_plan[s.dia];
+    if (dia && dia.ejercicios) {
+      Object.values(dia.ejercicios).forEach(function(ej) {
+        if (ej.perc && ej.perc[s.sem] != null) percs.push(ej.perc[s.sem]);
+      });
+    }
+  });
+  var percAvg = percs.length ? (percs.reduce(function(x,y){return x+y;},0) / percs.length) : null;
+
+  // Tendencia de carga global (sobre la pauta actual completa)
+  var subieron = 0, bajaron = 0, estables = 0;
+  Object.entries(a.dias_plan || {}).forEach(function(kv) {
+    var di = kv[0], dia = kv[1];
+    if (dia.ejercicios) Object.values(dia.ejercicios).forEach(function(ej) {
+      var t = getTrend(ej, a, parseInt(di));
+      if (t.ic === '▲') subieron++; else if (t.ic === '▼') bajaron++; else estables++;
+    });
+  });
+  var totalEjTend = subieron + bajaron + estables;
+
+  // Calorias acumuladas del mes
+  var calTotal = 0, calConDato = 0, calSinDato = 0;
+  sesionesMes.forEach(function(s) {
+    var dia = a.dias_plan && a.dias_plan[s.dia];
+    if (!dia) return;
+    var cal = estimarCalorias(a, dia, s.sem, s.dia);
+    if (cal != null) { calTotal += cal; calConDato++; } else { calSinDato++; }
+  });
+
+  // Peso corporal
+  var pesoActual = getPesoActualAlumno(a);
+  var pc = a.pesos_corporales || {};
+  var pcKeys = Object.keys(pc).sort();
+  var pesoInicioMes = null;
+  for (var i = pcKeys.length - 1; i >= 0; i--) {
+    var d2 = new Date(pcKeys[i] + 'T00:00:00');
+    if (d2.getFullYear() < info.y || (d2.getFullYear() === info.y && d2.getMonth() < info.m)) { pesoInicioMes = pc[pcKeys[i]].peso; break; }
+  }
+  var deltaPeso = (pesoActual != null && pesoInicioMes != null) ? parseFloat((pesoActual - pesoInicioMes).toFixed(1)) : null;
+
+  // Volumen por grupo muscular (pauta actual)
+  var tot = {};
+  Object.keys(MC).forEach(function(m) { tot[m] = 0; });
+  Object.values(a.dias_plan || {}).forEach(function(d) {
+    if (d.ejercicios) Object.values(d.ejercicios).forEach(function(ej) {
+      if (tot[ej.musculo] !== undefined) tot[ej.musculo] += ej.series;
+    });
+  });
+  var mxVol = Math.max.apply(null, Object.values(tot).concat([1]));
+  var volBars = Object.keys(MC).filter(function(m){return tot[m]>0;}).map(function(m) {
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+      '<div style="font-size:11px;color:var(--tx2);width:90px;flex-shrink:0;">' + m.charAt(0)+m.slice(1).toLowerCase() + '</div>' +
+      '<div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;"><div style="width:' + Math.round(tot[m]/mxVol*100) + '%;height:100%;background:' + MC[m] + ';border-radius:4px;"></div></div>' +
+      '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);width:24px;text-align:right;">' + tot[m] + '</div></div>';
+  }).join('');
+
+  // Calendario de asistencia
+  var diasSesion = {};
+  sesionesMes.forEach(function(s) { diasSesion[new Date(s.fecha+'T00:00:00').getDate()] = true; });
+  var celdas = '';
+  for (var dd = 1; dd <= info.diasEnMes; dd++) {
+    var activo = !!diasSesion[dd];
+    celdas += '<div class="dotday2' + (activo ? ' done' : '') + '">' + dd + '</div>';
+  }
+
+  function stat(valor, label, color, delta) {
+    return '<div class="stat2"><div class="n" style="color:' + (color||'var(--tx)') + ';">' + valor + '</div>' +
+      '<div class="l">' + label + '</div>' + (delta ? '<div class="delta">' + delta + '</div>' : '') + '</div>';
+  }
+
+  var adherenciaTxt = adherencia != null ? (hechas + ' / ' + esperadas) : (hechas + '');
+  var adherenciaDelta = adherencia != null ? (adherencia + '% adherencia') : 'Sin dias configurados en la pauta para estimar';
+  var percTxt = percAvg != null ? (percAvg.toFixed(1) + '/5') : '—';
+  var percDelta = percAvg != null ? (percs.length + ' registros este mes') : 'Sin percepciones registradas este mes';
+  var tendTxt = totalEjTend ? (subieron + '▲ / ' + bajaron + '▼ / ' + estables + '=') : '—';
+  var tendDelta = totalEjTend ? 'de ' + totalEjTend + ' ejercicios en la pauta actual' : 'Sin ejercicios en la pauta';
+  var pesoTxt = pesoActual != null ? (pesoActual + ' kg') : '—';
+  var pesoDelta = deltaPeso != null ? ((deltaPeso > 0 ? '▲ +' : deltaPeso < 0 ? '▼ ' : '= ') + deltaPeso + 'kg vs inicio de mes') : (pesoActual != null ? 'Sin registro de inicio de mes para comparar' : 'Alumno no ha registrado peso corporal');
+  var calTxt = calConDato ? ('~' + calTotal.toLocaleString('es-CL') + ' kcal') : '—';
+  var calDelta = calSinDato ? (calConDato + ' sesiones con dato' + (calSinDato ? ', ' + calSinDato + ' sin peso registrado' : '')) : (calConDato ? 'Estimado segun MET y peso actual' : 'Alumno no ha registrado su peso corporal');
+
+  var resumenTexto = a.nombre + ' — ' + info.nombreMes + ': ' + hechas + (esperadas?'/'+esperadas:'') + ' sesiones' + (adherencia!=null?' ('+adherencia+'%)':'') + ', racha ' + racha + ' dias' + (percAvg!=null?', percepcion '+percAvg.toFixed(1)+'/5':'') + (deltaPeso!=null?', peso '+(deltaPeso>0?'+':'')+deltaPeso+'kg':'') + (calConDato?', ~'+calTotal.toLocaleString('es-CL')+' kcal quemadas':'') + '.';
+
+  e.innerHTML =
+    '<div class="card" style="margin-bottom:12px;"><div class="cb" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;">' +
+      '<button class="btn bg sm" onclick="cambiarMesResumen(-1)">◀</button>' +
+      '<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--tx2);">' + info.nombreMes + '</div>' +
+      '<button class="btn bg sm" onclick="cambiarMesResumen(1)" ' + (S.resumenMesOffset>=0?'disabled style="opacity:.4;"':'') + '>▶</button>' +
+    '</div></div>' +
+    '<div class="g4rm" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">' +
+      stat(adherenciaTxt, 'Sesiones entrenadas', 'var(--ac)', adherenciaDelta) +
+      stat(racha, 'Racha actual (dias)', 'var(--am)', 'Mejor racha: ' + mejorRacha) +
+      stat(percTxt, 'Percepcion promedio', 'var(--tx)', percDelta) +
+      stat(tendTxt, 'Tendencia de carga', 'var(--bl)', tendDelta) +
+    '</div>' +
+    '<div class="card" style="margin-bottom:12px;"><div class="ch"><span class="ct">Asistencia del mes</span></div><div class="cb">' +
+      '<div class="caldots">' + celdas + '</div>' +
+      '<div style="margin-top:10px;font-size:10px;color:var(--tx3);">🟢 Entreno ese dia · el resto no tiene sesion registrada</div>' +
+    '</div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+      '<div class="card" style="margin-bottom:0;"><div class="ch"><span class="ct">Volumen por grupo muscular (pauta actual)</span></div><div class="cb">' + (volBars || '<span style="color:var(--tx3);">Sin ejercicios</span>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:0;"><div class="ch"><span class="ct">Composicion corporal y calorias</span></div><div class="cb">' +
+        '<div style="display:flex;gap:16px;margin-bottom:10px;">' +
+        '<div><div style="font-size:9px;color:var(--tx3);">PESO ACTUAL</div><div style="font-size:18px;font-weight:700;color:var(--bl);">' + pesoTxt + '</div><div style="font-size:10px;color:var(--tx2);">' + pesoDelta + '</div></div>' +
+        '</div>' +
+        '<div><div style="font-size:9px;color:var(--tx3);">CALORIAS ESTIMADAS (MES)</div><div style="font-size:18px;font-weight:700;color:var(--am);">' + calTxt + '</div><div style="font-size:10px;color:var(--tx2);">' + calDelta + '</div></div>' +
+      '</div></div>' +
+    '</div>' +
+    '<div class="card"><div class="ch"><span class="ct">Nota rapida para copiar / enviar</span></div><div class="cb">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:10px 12px;">' +
+      '<div id="resumen-mensual-copytext" data-raw="' + resumenTexto.replace(/"/g,'&quot;') + '" style="font-size:11px;color:var(--tx2);line-height:1.5;">' + resumenTexto + '</div>' +
+      '<button class="btn bp sm" onclick="copiarResumenMensual()" style="flex-shrink:0;">Copiar</button>' +
+      '</div></div></div>';
+}
+
 // BIBLIOTECA
 function rBib() {
   var e = el('vbib');
@@ -2936,6 +3240,20 @@ window.delAl = async function() {
   toast('Eliminado'); renderSide(); renderAll();
 };
 
+window.toggleBloqueo = async function() {
+  if (!S.aid) return;
+  var a = S.alumnos[S.aid];
+  var nuevoEstado = !a.bloqueado;
+  var msg = nuevoEstado
+    ? 'Bloquear a ' + a.nombre + '? No podra ver su pauta, pesos, evaluaciones ni ningun otro contenido hasta que lo desbloquees. Igual podra iniciar sesion.'
+    : 'Desbloquear a ' + a.nombre + '? Volvera a tener acceso completo a su cuenta.';
+  if (!confirm(msg)) return;
+  await FU('alumnos/' + S.aid, { bloqueado: nuevoEstado });
+  S.alumnos[S.aid].bloqueado = nuevoEstado;
+  toast(nuevoEstado ? 'Alumno bloqueado' : 'Alumno desbloqueado');
+  renderSide(); renderAll();
+};
+
 // VISTA ALUMNO
 var AVV = ['resumen','pauta','cardio','movextra','eval','pesos','cal','msgs','equipo','lesiones','beneficios','creditos','nutricion','ficha'];
 var AVL = ['Resumen','Mi Pauta','Mi Cardio','Mi Movilidad','Evaluaciones','Mis Pesos','Calendario','Mensajes','Mi Equipo','Lesiones','Beneficios','Mis Creditos','Mi Nutricion','Mi Ficha'];
@@ -2945,6 +3263,15 @@ function renderAV() {
   el('av-nav').innerHTML = AVL.map(function(l, i) {
     return '<button class="avn' + (S.avv === AVV[i] ? ' on' : '') + '" onclick="avSet(\'' + AVV[i] + '\')">' + l + '</button>';
   }).join('');
+  if (a.bloqueado) {
+    var msgBloq = a.mensajeBloqueo ? a.mensajeBloqueo.replace(/\n/g,'<br>') : 'Tu acceso esta temporalmente restringido.<br>Contacta a tu entrenador para reactivar tu cuenta.';
+    el('av-content').innerHTML = '<div class="card" style="text-align:center;padding:50px 20px;margin-top:10px;">' +
+      '<div style="font-size:38px;margin-bottom:14px;">🔒</div>' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:8px;">Cuenta bloqueada</div>' +
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.6;">' + msgBloq + '</div>' +
+      '</div>';
+    return;
+  }
   // Bienvenida primera vez
   if (!a.bienvenida_vista && a.dias_plan && Object.keys(a.dias_plan).length > 0) {
     FU('alumnos/' + S.uid, { bienvenida_vista: true });
@@ -3606,7 +3933,7 @@ window.avPropPeso = async function(ejId, si, nombre, pesoAct) {
   if (!inp) return;
   var nuevo = parseFloat(inp.value);
   if (nuevo === pesoAct) { toast('El peso es igual al actual','err'); return; }
-  var notif = { tipo:'cambio_peso', alumno:S.alumnos[S.uid].nombre, ejercicio:nombre, pesoAnterior:pesoAct, pesoNuevo:nuevo, semana:si+1, fecha:new Date().toISOString(), leida:false };
+  var notif = { tipo:'cambio_peso', alumno:S.alumnos[S.uid].nombre, aid:S.uid, di:S.avdia, ejId:ejId, ejercicio:nombre, pesoAnterior:pesoAct, pesoNuevo:nuevo, semana:si+1, fecha:new Date().toISOString(), leida:false };
   await FP('notificaciones', notif);
   toast('Cambio propuesto al entrenador','inf');
 };
@@ -3617,21 +3944,8 @@ window.avSaveObs = async function(si, txt) {
 
 function avEval(a) {
   var evals = a.evaluaciones ? Object.values(a.evaluaciones) : [];
-  if (!isAlumnoActivo(a) && evals.length > 1) {
-    // Show only latest eval, block the rest
-    var lastEval = evals.sort(function(a,b){return b.fecha.localeCompare(a.fecha);})[0];
-    var e = el('av-content');
-    e.innerHTML = '<div class="card" style="text-align:center;padding:20px;margin-bottom:12px;">' +
-      '<div style="font-size:24px;margin-bottom:8px;">🔒</div>' +
-      '<div style="font-size:13px;font-weight:600;margin-bottom:4px;">Historial bloqueado</div>' +
-      '<div style="font-size:11px;color:var(--tx2);">Solo puedes ver tu ultima evaluacion. Retoma tu asesoria para acceder al historial completo.</div>' +
-      '</div>' +
-      '<div class="card" style="padding:14px;">' +
-      '<div class="ch"><span class="ct">Ultima evaluacion — ' + (lastEval.fecha||'') + '</span></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;">' +
-      (lastEval.peso?'<div><div style="font-size:10px;color:var(--tx3);">Peso</div><div style="font-size:16px;font-weight:600;">'+lastEval.peso+' kg</div></div>':'') +
-      (lastEval.grasa?'<div><div style="font-size:10px;color:var(--tx3);">Grasa</div><div style="font-size:16px;font-weight:600;">'+lastEval.grasa+'%</div></div>':'') +
-      '</div></div>';
+  if (!isAlumnoActivo(a)) {
+    el('av-content').innerHTML = bloqueoHTML(a, 'Evaluaciones bloqueadas');
     return;
   }
 
@@ -3687,11 +4001,7 @@ window.subirFoto = async function(input) {
 
 function avPesos(a) {
   if (!isAlumnoActivo(a)) {
-    el('av-content').innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
-      '<div style="font-size:30px;margin-bottom:10px;">🔒</div>' +
-      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">Contenido bloqueado</div>' +
-      '<div style="font-size:12px;color:var(--tx2);">El historial de pesos esta disponible solo para alumnos con asesoria activa. Retoma tu plan para volver a acceder.</div>' +
-      '</div>';
+    el('av-content').innerHTML = bloqueoHTML(a, 'Contenido bloqueado');
     return;
   }
 
@@ -3705,41 +4015,51 @@ function avPesos(a) {
     });
   });
   if (!ejList2.length) { e.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3);">Sin ejercicios.</div>'; return; }
-  function svgLineChart(pesos2) {
-    var W=260, H=54, pad=6;
-    var vals = pesos2.map(function(p){return p.peso;});
-    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
-    if (min === max) { min -= 1; max += 1; }
-    var pts = vals.map(function(v,i) {
-      var x = pad + (i/(vals.length-1)) * (W-2*pad);
-      var y = H-pad - ((v-min)/(max-min)) * (H-2*pad);
-      return x.toFixed(1) + ',' + y.toFixed(1);
-    });
-    var path = 'M' + pts.join(' L');
-    var dots = pts.map(function(p,i) {
-      var xy = p.split(',');
-      return '<circle cx="'+xy[0]+'" cy="'+xy[1]+'" r="3" fill="'+(i===vals.length-1?'#3DFFA0':'#FFB830')+'"/>';
-    }).join('');
-    return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:54px;display:block;margin-bottom:8px;">' +
-      '<path d="'+path+'" fill="none" stroke="#FFB830" stroke-width="2"/>' + dots + '</svg>';
+
+  // Semana "actual" a resaltar: la que el alumno tiene activa ahora
+  var semActualIdx = Math.min(5, (a.sem_actual !== undefined && a.sem_actual !== null) ? parseInt(a.sem_actual) : 5);
+
+  function barChart(vals, semActual, colorAc) {
+    var mx = Math.max.apply(null, vals.concat([1]));
+    var mn = Math.min.apply(null, vals);
+    var rango = mx - mn || 1;
+    return '<div class="exbars">' + vals.map(function(v, i) {
+      var pct = 18 + Math.round(((v - mn) / rango) * 82); // min 18% para que siempre se vea una barra
+      var activa = i === semActual;
+      return '<div class="exbars-col"><div class="exbars-bar' + (activa?' on':'') + '" style="height:' + pct + '%;' + (activa?'background:'+colorAc+';':'') + '"></div><span>S' + (i+1) + '</span></div>';
+    }).join('') + '</div>';
   }
 
   var cards = ejList2.map(function(ej) {
-    var pesos2 = [];
-    for (var si2=0;si2<6;si2++) { var r=calcSem(ej,si2,a,ej._di); pesos2.push({sem:si2+1,peso:r.peso,reps:r.reps}); }
-    var hasPeso = pesos2.some(function(p){return p.peso>0;});
-    var pills = pesos2.map(function(p,i) {
-      return '<div style="text-align:center;background:' + (i===0?'var(--ac2)':'var(--bg3)') + ';border:1px solid ' + (i===0?'rgba(61,255,160,.2)':'var(--bd)') + ';border-radius:6px;padding:4px 8px;min-width:50px;">' +
-        '<div style="font-family:monospace;font-size:9px;color:var(--tx3);">S' + p.sem + '</div>' +
-        '<div style="font-family:monospace;font-size:11px;font-weight:500;color:' + (i===0?'var(--ac)':'var(--am)') + ';">' + (hasPeso?(p.peso===0?'Corp.':p.peso+'kg'):p.reps+' r') + '</div></div>';
-    }).join('');
-    return '<div style="padding:12px 14px;border-bottom:1px solid var(--bd);">' +
-      '<div style="font-weight:600;font-size:13px;margin-bottom:1px;">' + ej.nombre + '</div>' +
-      '<div style="font-size:9px;color:var(--tx3);font-family:monospace;margin-bottom:7px;">' + ej.musculo + '</div>' +
-      (hasPeso ? svgLineChart(pesos2) : '') +
-      '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + pills + '</div></div>';
+    var serie = [];
+    for (var si2=0;si2<6;si2++) { var r=calcSem(ej,si2,a,ej._di); serie.push({sem:si2+1,peso:r.peso,reps:(typeof r.reps==='number'?r.reps:null)}); }
+    var hasPeso = serie.some(function(p){return p.peso>0;});
+    var col = MC[ej.musculo] || '#3DB8FF';
+
+    var valsPrincipal = hasPeso ? serie.map(function(p){return p.peso;}) : serie.map(function(p){return p.reps!=null?p.reps:0;});
+    var actual = valsPrincipal[semActualIdx];
+    var anterior = semActualIdx > 0 ? valsPrincipal[semActualIdx-1] : null;
+    var delta = anterior != null ? parseFloat((actual - anterior).toFixed(1)) : null;
+    var deltaHTML = '';
+    if (delta != null && delta !== 0) {
+      deltaHTML = '<span class="exdelta ' + (delta>0?'up':'down') + '">' + (delta>0?'▲ +':'▼ ') + delta + (hasPeso?'kg':' reps') + ' esta semana</span>';
+    } else if (delta === 0) {
+      deltaHTML = '<span class="exdelta flat">= se mantuvo</span>';
+    }
+
+    return '<div class="excard2">' +
+      '<div class="exhead2">' +
+        '<div><div style="font-weight:600;font-size:13px;">' + ej.nombre + '</div><div style="font-size:9px;color:var(--tx3);font-family:\'DM Mono\',monospace;">' + ej.musculo + '</div></div>' +
+      '</div>' +
+      '<div class="exnow2">' +
+        '<span class="w" style="color:' + col + ';">' + (actual===0?'Corp.':actual) + '</span>' +
+        (actual!==0?'<span class="u">' + (hasPeso?'kg':'reps') + '</span>':'') +
+        deltaHTML +
+      '</div>' +
+      barChart(valsPrincipal, semActualIdx, col) +
+      '</div>';
   }).join('');
-  e.innerHTML = '<div class="card"><div class="ch"><span class="ct">Progresion semana a semana</span></div><div>' + cards + '</div></div>';
+  e.innerHTML = '<div class="ch" style="margin-bottom:10px;"><span class="ct">Progresion semana a semana</span></div><div class="exgrid">' + cards + '</div>';
 }
 
 function avCal(a) {
@@ -4074,11 +4394,7 @@ function rBeneficios() {
 function avBeneficios(a) {
   var e = el('av-content');
   if (!isAlumnoActivo(a)) {
-    e.innerHTML = '<div class="card" style="text-align:center;padding:30px;">' +
-      '<div style="font-size:30px;margin-bottom:10px;">🔒</div>' +
-      '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">Beneficios exclusivos</div>' +
-      '<div style="font-size:12px;color:var(--tx2);">Los convenios y descuentos de HouseFit estan disponibles solo para alumnos con asesoria activa. Retoma tu plan para acceder.</div>' +
-      '</div>';
+    e.innerHTML = bloqueoHTML(a, 'Beneficios exclusivos');
     return;
   }
 
@@ -4617,8 +4933,60 @@ async function actualizarRacha(uid) {
   }
 }
 
+// ── BLOQUEO MANUAL DE ALUMNO ──────────────────────────────────────────────────
+window._bqAid = null;
+window.toggleBloqueoAlumno = async function(aid) {
+  var a = S.alumnos[aid];
+  if (!a) return;
+  if (a.bloqueado) {
+    if (!confirm('Desbloquear a ' + a.nombre + '? Volvera a tener acceso completo a la app.')) return;
+    await FU('alumnos/' + aid, { bloqueado: false, mensajeBloqueo: null });
+    a.bloqueado = false; a.mensajeBloqueo = null;
+    toast(a.nombre + ' desbloqueado');
+    renderSide();
+    if (S.aid === aid) renderAll();
+  } else {
+    window._bqAid = aid;
+    el('bq-info').textContent = 'Al bloquear a ' + a.nombre + ', podra seguir entrando a la app pero vera todo el contenido bloqueado con este mensaje, hasta que lo desbloquees.';
+    el('bq-mensaje').value = 'Tu asesoria con HouseFit esta pausada. Escribeme para regularizar y seguir entrenando.';
+    el('m-bloquear-alumno').classList.remove('hidden');
+  }
+};
+
+window.confirmBloquearAlumno = async function() {
+  var aid = window._bqAid;
+  if (!aid) { closeM('m-bloquear-alumno'); return; }
+  var a = S.alumnos[aid];
+  var msg = el('bq-mensaje') ? el('bq-mensaje').value.trim() : '';
+  if (!msg) { toast('Escribe un mensaje para el alumno', 'err'); return; }
+  await FU('alumnos/' + aid, { bloqueado: true, mensajeBloqueo: msg });
+  a.bloqueado = true; a.mensajeBloqueo = msg;
+  closeM('m-bloquear-alumno');
+  window._bqAid = null;
+  toast(a.nombre + ' bloqueado');
+  renderSide();
+  if (S.aid === aid) renderAll();
+};
+
+function bloqueoHTML(a, titulo) {
+  var msg = (a && a.mensajeBloqueo) ? a.mensajeBloqueo : 'Tu entrenador bloqueo temporalmente el acceso a este contenido. Contactalo para resolverlo.';
+  return '<div class="card" style="text-align:center;padding:30px;">' +
+    '<div style="font-size:30px;margin-bottom:10px;">🔒</div>' +
+    '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">' + titulo + '</div>' +
+    '<div style="font-size:12px;color:var(--tx2);">' + msg + '</div>' +
+    '</div>';
+}
+
 // ── ESTADO ACTIVO ALUMNO ──────────────────────────────────────────────────────
+// Antes se calculaba automaticamente segun si el alumno tenia sesiones en los
+// ultimos 14 dias. Eso bloqueaba a alumnos activos que simplemente no marcaban
+// sesiones (ej: el propio profe entrenando su pauta). Ahora es un switch manual
+// que controla el profe desde la lista de alumnos ("Bloquear alumno").
 function isAlumnoActivo(a) {
+  return !(a && a.bloqueado);
+}
+
+function _isAlumnoActivoLEGACY_noUsar(a) {
   if (!a || !a.sesiones) return false;
   var sesiones = Object.values(a.sesiones);
   if (!sesiones.length) return false;
@@ -5076,12 +5444,15 @@ function renderNotifCard(containerId) {
       pesos.forEach(function(kv) {
         var n = kv[1];
         var etiqueta = n.valor;
+        var puedeAplicar = false;
         if (n.tipo === 'cambio_peso') {
           etiqueta = n.pesoAnterior + 'kg -> ' + n.pesoNuevo + 'kg (Sem ' + n.semana + ')';
+          puedeAplicar = !!(n.aid && n.ejId && n.di != null);
         }
         html2 += '<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--bd);">' +
           '<div style="flex:1;font-size:12px;"><b>' + n.alumno + '</b> - ' + n.ejercicio + '</div>' +
           '<span style="font-size:12px;font-weight:600;color:var(--ac);">' + etiqueta + '</span>' +
+          (puedeAplicar ? '<button class="btn bp sm" style="padding:3px 9px;font-size:10px;" onclick="ajustarPesoDesdeSemana(\'' + n.aid + '\',' + n.di + ',\'' + n.ejId + '\',' + (n.semana-1) + ',' + n.pesoNuevo + ')">Aplicar</button>' : '') +
           '</div>';
       });
       html2 += '</div></div>';
@@ -5675,23 +6046,39 @@ window.delBibMov = async function(id) {
 };
 
 // ── AJUSTAR PESO REAL DESDE UNA SEMANA ESPECIFICA ────────────────────────────
-window.ajustarPesoDesdeSemana = async function(aid, di, ejId, si, pesoCalculado) {
-  var nuevo = prompt('Peso real que quedo bien en Semana ' + (si+1) + ' (calculado: ' + pesoCalculado + 'kg). Las semanas anteriores NO se veran afectadas:', pesoCalculado);
-  if (nuevo === null) return;
-  var val = parseFloat(nuevo);
+// Antes usaba prompt() nativo, que falla en iPhone cuando la app esta instalada
+// como PWA (pantalla de inicio) - no deja escribir o no guarda el valor.
+// Ahora usa un modal propio de la app (mas confiable en todos los dispositivos).
+window._apCtx = null;
+window.ajustarPesoDesdeSemana = function(aid, di, ejId, si, pesoCalculado) {
+  window._apCtx = { aid: aid, di: di, ejId: ejId, si: si };
+  el('ap-info').textContent = 'Peso real que quedo bien en Semana ' + (si+1) + ' (calculado: ' + pesoCalculado + 'kg).';
+  el('ap-peso').value = pesoCalculado;
+  el('m-ajustar-peso').classList.remove('hidden');
+  setTimeout(function() { var inp = el('ap-peso'); if (inp) { inp.focus(); inp.select(); } }, 50);
+};
+
+window.confirmAjustarPeso = async function() {
+  var ctx = window._apCtx;
+  if (!ctx) { closeM('m-ajustar-peso'); return; }
+  var inp = el('ap-peso');
+  var val = parseFloat(inp ? inp.value : NaN);
   if (isNaN(val) || val < 0) { toast('Valor invalido', 'err'); return; }
 
+  var aid = ctx.aid, di = ctx.di, ejId = ctx.ejId, si = ctx.si;
   var a = S.alumnos[aid];
   var dplan = (S._ciclo === 'siguiente' && a.dias_plan_siguiente) ? a.dias_plan_siguiente : a.dias_plan;
   var ej = dplan && dplan[di] && dplan[di].ejercicios && dplan[di].ejercicios[ejId];
-  if (!ej) return;
+  if (!ej) { closeM('m-ajustar-peso'); return; }
 
   await FU(getDplanPath(aid) + '/' + di + '/ejercicios/' + ejId + '/pesoOverride/' + si, val);
   if (!ej.pesoOverride) ej.pesoOverride = {};
   ej.pesoOverride[si] = val;
 
+  closeM('m-ajustar-peso');
+  window._apCtx = null;
   toast('Peso ajustado desde Semana ' + (si+1) + ' en adelante');
-  rPauta(A());
+  if (S.aid === aid) rPauta(A());
 };
 
 // ── MOVILIDAD EXTRA (sesiones aparte, fuera del ciclo de dias) ──────────────
