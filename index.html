@@ -152,6 +152,8 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
 .lockbtn{font-size:10px;flex-shrink:0;margin-left:4px;opacity:.35;cursor:pointer;transition:opacity .12s;}
 .lockbtn:hover{opacity:1;}
 .lockbtn.on{opacity:1;}
+.apl-row{display:flex;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid var(--bd);cursor:pointer;border-radius:8px;transition:background .12s;}
+.apl-row:hover{background:var(--bg3);}
 .ai.on{background:var(--ac2);border-color:rgba(61,255,160,.15);color:var(--ac);}
 .av{width:22px;height:22px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--tx2);flex-shrink:0;font-family:'DM Mono',monospace;}
 .ai.on .av{background:rgba(61,255,160,.15);color:var(--ac);}
@@ -612,6 +614,27 @@ input,select,textarea,button{font-family:'Inter',sans-serif;}
     <div class="mf">
       <button class="btn bg sm" onclick="closeM('m-bloquear-alumno')">Cancelar</button>
       <button class="btn bp sm" style="background:var(--rd);" onclick="confirmBloquearAlumno()">Bloquear</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-aplicar-plantilla">
+  <div class="modal" style="width:420px;">
+    <div class="mt">Aplicar plantilla</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;" id="apl-info"></div>
+    <div id="apl-lista" style="max-height:320px;overflow-y:auto;"></div>
+    <div class="mf"><button class="btn bg sm" onclick="closeM('m-aplicar-plantilla')">Cancelar</button></div>
+  </div>
+</div>
+
+<div class="ov hidden" id="m-confirmar-plantilla">
+  <div class="modal" style="width:380px;">
+    <div class="mt">Confirmar</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;" id="apc-nombre"></div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;" id="apc-destino"></div>
+    <div class="mf">
+      <button class="btn bg sm" onclick="closeM('m-confirmar-plantilla')">Cancelar</button>
+      <button class="btn bp sm" onclick="confirmarAplicarPlantilla()">Aplicar</button>
     </div>
   </div>
 </div>
@@ -2431,45 +2454,73 @@ function guardarPlantilla(aid) {
 }
 window.guardarPlantilla = guardarPlantilla;
 
+// Antes usaba prompt()/confirm() nativos para elegir la plantilla - fallan en
+// iPhone cuando la app esta instalada como PWA (la lista sale cortada o no se
+// puede escribir el numero). Ahora es un modal propio con la lista clickeable.
+window._apPlCtx = null;
 function aplicarPlantilla(aid) {
   FG('plantillas').then(function(snap) {
     if (!snap) { toast('Sin plantillas guardadas', 'err'); return; }
     var pls = Object.entries(snap);
-    var lista = pls.map(function(kv, i) { return (i+1) + '. ' + kv[1].nombre + ' (' + kv[1].fecha + ')'; }).join('\n');
-    var sel = prompt('Selecciona el numero de plantilla:\n\n' + lista);
-    var idx = parseInt(sel) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= pls.length) { toast('Seleccion invalida', 'err'); return; }
-    var pl = pls[idx][1];
     var esSiguiente = S._ciclo === 'siguiente';
-    var destino = esSiguiente ? 'PROXIMO CICLO' : 'ciclo actual';
-    if (!confirm('Aplicar "' + pl.nombre + '" a ' + S.alumnos[aid].nombre + ' (' + destino + ')? ' + (esSiguiente ? '' : 'Se archivara el plan actual como respaldo antes de reemplazar.'))) return;
-
-    (async function() {
-      var path = getDplanPath(aid);
-      // Archivar respaldo solo si estamos reemplazando el CICLO ACTUAL (no tiene sentido archivar "siguiente" que aun no se usa)
-      if (!esSiguiente) {
-        var a = S.alumnos[aid];
-        if (a.dias_plan && Object.keys(a.dias_plan).length > 0) {
-          await FP('alumnos/' + aid + '/historial_planes', {
-            label: 'Respaldo automatico antes de aplicar "' + pl.nombre + '" — ' + new Date().toLocaleDateString('es-CL'),
-            fecha: new Date().toISOString().slice(0,10),
-            dias_plan: a.dias_plan,
-            semanas: getSemanas(a)
-          });
-        }
-      }
-      await FS(path, pl.dias_plan);
-      if (esSiguiente) {
-        S.alumnos[aid].dias_plan_siguiente = pl.dias_plan;
-      } else {
-        S.alumnos[aid].dias_plan = pl.dias_plan;
-      }
-      toast('Plantilla aplicada a ' + destino + (esSiguiente ? '' : ' (respaldo guardado en Historial)'));
-      rPauta(A());
-    })();
+    window._apPlCtx = { aid: aid, esSiguiente: esSiguiente, pls: pls };
+    el('apl-info').textContent = esSiguiente
+      ? 'Se cargara en el PROXIMO CICLO de ' + S.alumnos[aid].nombre + ' (no afecta la pauta activa).'
+      : 'Reemplazara el ciclo ACTUAL de ' + S.alumnos[aid].nombre + ' (se guarda un respaldo automatico en Historial).';
+    var rows = pls.map(function(kv, i) {
+      var p = kv[1];
+      var ejCount = Object.values(p.dias_plan || {}).reduce(function(s,d){return s+(d.ejercicios?Object.keys(d.ejercicios).length:0);},0);
+      return '<div class="apl-row" onclick="seleccionarPlantillaModal(' + i + ')">' +
+        '<div style="flex:1;"><div style="font-weight:500;font-size:13px;">' + p.nombre + '</div>' +
+        '<div style="font-size:10px;color:var(--tx3);">' + (p.fecha||'—') + ' · ' + ejCount + ' ejercicios</div></div>' +
+        '<span style="color:var(--tx3);">›</span></div>';
+    }).join('');
+    el('apl-lista').innerHTML = rows || '<div style="padding:20px;text-align:center;color:var(--tx3);">Sin plantillas</div>';
+    el('m-aplicar-plantilla').classList.remove('hidden');
   });
 }
 window.aplicarPlantilla = aplicarPlantilla;
+
+window.seleccionarPlantillaModal = function(idx) {
+  var ctx = window._apPlCtx;
+  if (!ctx) return;
+  var pl = ctx.pls[idx][1];
+  closeM('m-aplicar-plantilla');
+  el('apc-nombre').textContent = pl.nombre;
+  el('apc-destino').textContent = ctx.esSiguiente
+    ? 'Se cargara en el PROXIMO CICLO de ' + S.alumnos[ctx.aid].nombre + '.'
+    : 'Reemplazara el ciclo ACTUAL de ' + S.alumnos[ctx.aid].nombre + ' (se guarda respaldo automatico en Historial).';
+  window._apPlCtx = { aid: ctx.aid, esSiguiente: ctx.esSiguiente, pl: pl };
+  el('m-confirmar-plantilla').classList.remove('hidden');
+};
+
+window.confirmarAplicarPlantilla = async function() {
+  var ctx = window._apPlCtx;
+  if (!ctx || !ctx.pl) { closeM('m-confirmar-plantilla'); return; }
+  var aid = ctx.aid, esSiguiente = ctx.esSiguiente, pl = ctx.pl;
+  closeM('m-confirmar-plantilla');
+  var path = getDplanPath(aid);
+  if (!esSiguiente) {
+    var a = S.alumnos[aid];
+    if (a.dias_plan && Object.keys(a.dias_plan).length > 0) {
+      await FP('alumnos/' + aid + '/historial_planes', {
+        label: 'Respaldo automatico antes de aplicar "' + pl.nombre + '" — ' + new Date().toLocaleDateString('es-CL'),
+        fecha: new Date().toISOString().slice(0,10),
+        dias_plan: a.dias_plan,
+        semanas: getSemanas(a)
+      });
+    }
+  }
+  await FS(path, pl.dias_plan);
+  if (esSiguiente) {
+    S.alumnos[aid].dias_plan_siguiente = pl.dias_plan;
+  } else {
+    S.alumnos[aid].dias_plan = pl.dias_plan;
+  }
+  window._apPlCtx = null;
+  toast('Plantilla "' + pl.nombre + '" aplicada a ' + (esSiguiente ? 'PROXIMO CICLO' : 'ciclo actual'));
+  if (S.aid === aid) rPauta(A());
+};
 
 // EVALUACIONES
 function openEvalModal(key) {
